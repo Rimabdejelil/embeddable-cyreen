@@ -97,7 +97,7 @@ function chartData(props: Props): ChartData<'bar' | 'line'> {
     ),
   ] as string[];
 
-  const metricsDatasets =  metrics?.map((metric, i) => ({
+  const metricsDatasets = metrics?.map((metric, i) => ({
     barPercentage: 0.8,
     barThickness: 'flex',
     maxBarThickness: 50,
@@ -105,26 +105,27 @@ function chartData(props: Props): ChartData<'bar' | 'line'> {
     borderRadius: 4,
     label: metric.title,
     data: results?.data?.map((d) => parseFloat(d[metric.name] || 0)) || [],
-    backgroundColor: COLORS[i % COLORS.length],
-    order: 1
+    backgroundColor: '#f04b55', // Use the specified color
+    borderColor: '#f04b55', // Use the specified color for border
+    order: 1,
   })) || [];
 
-  //optional metrics to display as a line on the barchart 
+  // optional metrics to display as a line on the bar chart
   const lineMetricsDatasets = lineMetrics?.map((metric, i) => ({
-      label: metric.title,
-      data: results?.data?.map((d) => parseFloat(d[metric.name] || 0)) || [],
-      backgroundColor: COLORS[metrics.length + i % COLORS.length],
-      borderColor: COLORS[metrics.length + i % COLORS.length],
-      cubicInterpolationMode: 'monotone' as const,
-      pointRadius: 2,
-      pointHoverRadius: 3,
-      type: 'line' as const,
-      order: 0,
-      yAxisID: showSecondYAxis ? 'y1' : 'y',
+    label: metric.title,
+    data: results?.data?.map((d) => parseFloat(d[metric.name] || 0)) || [],
+    backgroundColor: '#f04b55', // Use the specified color for line
+    borderColor: '#f04b55', // Use the specified color for line border
+    cubicInterpolationMode: 'monotone' as const,
+    pointRadius: 2,
+    pointHoverRadius: 3,
+    type: 'line' as const,
+    order: 0,
+    yAxisID: showSecondYAxis ? 'y1' : 'y',
   })) || [];
 
   return {
     labels,
-    datasets: [...metricsDatasets, ...lineMetricsDatasets]
+    datasets: [...metricsDatasets, ...lineMetricsDatasets],
   };
 }

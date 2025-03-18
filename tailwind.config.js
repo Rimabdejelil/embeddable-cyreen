@@ -8,6 +8,9 @@ module.exports = {
     transparent: 'transparent',
     current: 'currentColor',
     extend: {
+      colors: {
+        themeColor: "#f04b55", // Define your theme color here
+      },
       fontFamily: {
         embeddable: EMB_FONT
       }

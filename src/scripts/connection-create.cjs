@@ -1,18 +1,18 @@
-const apiKey = '...';
+const apiKey = '7f41e45d-02ac-45af-819d-16f024faeec6';
 const connectionName = 'my-db'; 
 
-const BASE_URL = 'https://api.us.embeddable.com'; // US
-// const BASE_URL = 'https://api.eu.embeddable.com'; // EU
+//const BASE_URL = 'https://api.us.embeddable.com'; // US
+const BASE_URL = 'https://api.eu.embeddable.com'; // EU
 
 /**
  * see db-specific examples @ https://trevorio.notion.site/Connections-API-ff4af10f7eaf4288b6952fde04e6e933
  */
 const dbType = 'postgres'; // or bigquery, etc.
 const credentials = {
-    database: '...',
-    host: '...',
-    user: '...',
-    password: '...'
+    database: 'cap_2_analytics',
+    host: 'caplatam.ccy0kgtniogg.eu-central-1.rds.amazonaws.com',
+    user: 'tableau',
+    password: 'Business_As_Usual'
 }
 
 async function run() {
@@ -24,9 +24,9 @@ async function run() {
             'Authorization': `Bearer ${apiKey}` /* keep your API Key secure */
         },
         body: JSON.stringify({
-            name: `${connectionName}`,
-            type: dbType, 
-            credentials: credentials
+    		name: `${connectionName}`,
+    		type: dbType, 
+    		credentials: credentials
         })
     });
 

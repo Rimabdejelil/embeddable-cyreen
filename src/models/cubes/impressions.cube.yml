@@ -1,0 +1,686 @@
+cubes:
+  - name: impressions
+    sql_table: public.impressions
+    data_source: my-db
+
+    # sql: >
+    #   select * 
+    #   from public.impressions 
+    #   where id_store = '{COMPILE_CONTEXT.securityContext.id_store}' 
+
+    dimensions:
+      - name: id_impression
+        sql: id_impression
+        type: number
+        primary_key: true
+
+      - name: number_root
+        sql: number_root
+        type: number
+
+      - name: id_company
+        sql: id_company
+        type: number
+
+      - name: id_campaign
+        sql: id_campaign
+        type: number
+
+      - name: id_store
+        sql: id_store
+        type: number
+
+      - name: date
+        sql: date
+        type: time
+
+      - name: hour
+        sql: hour
+        type: number
+
+      - name: timestamp
+        sql: timestamp
+        type: time
+
+      - name: id_clip
+        sql: id_clip
+        type: number
+
+      - name: impressions_unfiltered
+        sql: impressions_unfiltered
+        type: number
+
+      - name: impressions_filtered
+        sql: impressions_filtered
+        type: number
+
+      - name: impressions_unfiltered_trigger
+        sql: impressions_unfiltered_trigger
+        type: number
+
+      - name: impressions_unfiltered_witness
+        sql: impressions_unfiltered_witness
+        type: number
+
+      - name: impressions_filtered_trigger
+        sql: impressions_filtered_trigger
+        type: number
+
+      - name: impressions_filtered_witness
+        sql: impressions_filtered_witness
+        type: number
+
+      - name: impressions_type
+        sql: impressions_type
+        type: string
+
+      - name: name_country
+        sql: name_country
+        type: string
+
+      - name: name_store
+        sql: name_store
+        type: string
+
+      - name: zip_code
+        sql: zip_code
+        type: string
+
+      - name: latitude
+        sql: latitude
+        type: number
+
+      - name: longitude
+        sql: longitude
+        type: number
+
+      - name: name_market_type
+        sql: name_market_type
+        type: string
+
+      - name: hour_group
+        sql: hour_group
+        type: string
+
+      - name: gender
+        sql: gender
+        type: string
+
+      - name: age
+        sql: age
+        type: number
+
+      - name: name_clip
+        sql: name_clip
+        type: string
+
+      - name: name_campaign
+        sql: name_campaign
+        type: string
+
+      - name: month
+        sql: TO_CHAR(date::DATE, 'FMMonth')  
+        type: string  
+
+      - name: weekday
+        sql: EXTRACT(DOW FROM date::DATE)
+        type: number
+
+      - name: week
+        sql: EXTRACT(WEEK FROM date::DATE)
+        type: number
+
+
+    measures:
+      - name: count
+        type: count
+        title: "number of impressions"
+      
+      - name: count_impressions_filtered
+        type: sum
+        sql: impressions_filtered
+        title: "sum of filtered impressions"
+      
+      - name: impression_unfiltered_calculation
+        type: number
+        sql: "ROUND(1.5 * SUM(impressions_unfiltered))"
+        title: "Impressions Unfiltered Calculation"
+
+  - name: big_dm
+    sql_table: public.big_dm
+    data_source: my-db
+
+    dimensions:
+    - name: id_big_dm
+      sql: id_big_dm
+      type: number
+      primary_key: true
+
+    - name: number_root
+      sql: number_root
+      type: number
+
+    - name: id_company
+      sql: id_company
+      type: number
+
+    - name: id_campaign
+      sql: id_campaign
+      type: number
+
+    - name: id_store
+      sql: id_store
+      type: number
+
+    - name: year
+      sql: year
+      type: number
+
+    - name: month
+      sql: month
+      type: number
+
+    - name: week
+      sql: week
+      type: number
+
+    - name: dow
+      sql: dow
+      type: number
+
+    - name: hour
+      sql: hour
+      type: number
+
+    - name: hour_group
+      sql: hour_group
+      type: string
+
+    - name: timestamp
+      sql: timestamp
+      type: time
+
+    - name: date
+      sql: date
+      type: time
+
+    - name: name_checkout
+      sql: name_checkout
+      type: string
+
+    - name: number_adlevel
+      sql: number_adlevel
+      type: number
+
+    - name: name_adlevel
+      sql: name_adlevel
+      type: string
+
+    - name: frequency
+      sql: frequency
+      type: number
+
+    - name: frequency_seen
+      sql: frequency_seen
+      type: number
+
+    - name: frequency_seen_a
+      sql: frequency_seen_a
+      type: number
+
+    - name: frequency_seen_b
+      sql: frequency_seen_b
+      type: number
+
+    - name: frequency_seen_c
+      sql: frequency_seen_c
+      type: number
+
+    - name: frequency_a
+      sql: frequency_a
+      type: number
+
+    - name: frequency_b
+      sql: frequency_b
+      type: number
+
+    - name: frequency_c
+      sql: frequency_c
+      type: number
+
+    - name: frequency_not_seen
+      sql: frequency_not_seen
+      type: number
+
+    - name: frequency_not_seen_a
+      sql: frequency_not_seen_a
+      type: number
+
+    - name: frequency_not_seen_b
+      sql: frequency_not_seen_b
+      type: number
+
+    - name: frequency_not_seen_c
+      sql: frequency_not_seen_c
+      type: number
+
+    - name: receipts
+      sql: receipts
+      type: number
+
+    - name: receipts_a
+      sql: receipts_a
+      type: number
+
+    - name: receipts_b
+      sql: receipts_b
+      type: number
+
+    - name: receipts_c
+      sql: receipts_c
+      type: number
+
+    - name: receipts_seen
+      sql: receipts_seen
+      type: number
+
+    - name: receipts_seen_a
+      sql: receipts_seen_a
+      type: number
+
+    - name: receipts_seen_b
+      sql: receipts_seen_b
+      type: number
+
+    - name: receipts_seen_c
+      sql: receipts_seen_c
+      type: number
+
+    - name: receipts_not_seen
+      sql: receipts_not_seen
+      type: number
+
+    - name: receipts_not_seen_a
+      sql: receipts_not_seen_a
+      type: number
+
+    - name: receipts_not_seen_b
+      sql: receipts_not_seen_b
+      type: number
+
+    - name: receipts_not_seen_c
+      sql: receipts_not_seen_c
+      type: number
+
+    - name: sales
+      sql: sales
+      type: number
+
+    - name: sales_a
+      sql: sales_a
+      type: number
+
+    - name: sales_b
+      sql: sales_b
+      type: number
+
+    - name: sales_c
+      sql: sales_c
+      type: number
+
+    - name: sales_seen
+      sql: sales_seen
+      type: number
+
+    - name: sales_seen_a
+      sql: sales_seen_a
+      type: number
+
+    - name: sales_seen_b
+      sql: sales_seen_b
+      type: number
+
+    - name: sales_seen_c
+      sql: sales_seen_c
+      type: number
+
+    - name: sales_not_seen
+      sql: sales_not_seen
+      type: number
+
+    - name: sales_not_seen_a
+      sql: sales_not_seen_a
+      type: number
+
+    - name: sales_not_seen_b
+      sql: sales_not_seen_b
+      type: number
+
+    - name: sales_not_seen_c
+      sql: sales_not_seen_c
+      type: number
+
+    - name: revenue
+      sql: revenue
+      type: number
+
+    - name: revenue_a
+      sql: revenue_a
+      type: number
+
+    - name: revenue_b
+      sql: revenue_b
+      type: number
+
+    - name: revenue_c
+      sql: revenue_c
+      type: number
+
+    - name: revenue_seen
+      sql: revenue_seen
+      type: number
+
+    - name: revenue_seen_a
+      sql: revenue_seen_a
+      type: number
+
+    - name: revenue_seen_b
+      sql: revenue_seen_b
+      type: number
+
+    - name: revenue_seen_c
+      sql: revenue_seen_c
+      type: number
+
+    - name: revenue_not_seen
+      sql: revenue_not_seen
+      type: number
+
+    - name: revenue_not_seen_a
+      sql: revenue_not_seen_a
+      type: number
+
+    - name: revenue_not_seen_b
+      sql: revenue_not_seen_b
+      type: number
+
+    - name: revenue_not_seen_c
+      sql: revenue_not_seen_c
+      type: number
+
+    - name: impressions_unfiltered
+      sql: impressions_unfiltered
+      type: number
+
+    - name: impressions_filtered
+      sql: impressions_filtered
+      type: number
+
+    - name: clouds
+      sql: clouds
+      type: number
+
+    - name: humidity
+      sql: humidity
+      type: number
+
+    - name: temp
+      sql: temp
+      type: number
+
+    - name: rain_per_hour
+      sql: rain_per_hour
+      type: number
+
+    - name: visibility
+      sql: visibility
+      type: number
+
+    - name: wind_speed
+      sql: wind_speed
+      type: number
+
+    - name: name_market_type
+      sql: name_market_type
+      type: string
+
+    - name: name_store
+      sql: name_store
+      type: string
+
+    - name: zip_code
+      sql: zip_code
+      type: string
+
+    - name: latitude
+      sql: latitude
+      type: number
+
+    - name: longitude
+      sql: longitude
+      type: number
+
+    - name: name_country
+      sql: name_country
+      type: string
+
+    - name: name_region
+      sql: name_region
+      type: string
+
+    - name: name_campaign
+      sql: name_campaign
+      type: string
+
+    - name: name_brand
+      sql: name_brand
+      type: string
+
+    - name: name_manufacturer
+      sql: name_manufacturer
+      type: string
+
+    - name: id_advertiser_brand
+      sql: id_advertiser_brand
+      type: number
+
+    - name: name_retailer
+      sql: name_retailer
+      type: string
+
+    - name: contact_type
+      sql: contact_type
+      type: string
+
+
+    measures:
+    - name: count
+      type: count
+      title: "# of records"
+
+    - name: sum_frequency
+      type: sum
+      sql: frequency
+      title: "Total Frequency"
+
+    - name: sum_frequency_seen
+      type: sum
+      sql: frequency_seen
+      title: "Total Frequency Seen"
+
+    - name: sum_frequency_not_seen
+      type: sum
+      sql: frequency_not_seen
+      title: "Total Frequency Not Seen"
+    
+
+    - name: sum_receipts
+      type: sum
+      sql: receipts
+      title: "Total Receipts"
+
+    - name: sum_receipts_seen
+      type: sum
+      sql: receipts_seen
+      title: "Total Receipts Seen"
+
+    - name: sum_receipts_not_seen
+      type: sum
+      sql: receipts_not_seen
+      title: "Total Receipts_Not_Seen"
+
+    - name: sum_sales
+      type: sum
+      sql: sales
+      title: "Total Sales"
+
+    - name: sum_sales_campaign_period
+      type: sum
+      sql: sales_campaign_period
+      title: "Sales in Campaign Period"
+
+    - name: sum_revenue
+      type: sum
+      sql: revenue
+      title: "Total Revenue"
+
+    - name: avg_frequency
+      type: avg
+      sql: frequency
+      title: "Average Frequency"
+
+    - name: avg_sales
+      type: avg
+      sql: sales
+      title: "Average Sales"
+
+    - name: avg_revenue
+      type: avg
+      sql: revenue
+      title: "Average Revenue"
+
+    - name: sum_impressions_filtered
+      type: sum
+      sql: impressions_filtered
+      title: "Sum of Filtered Impressions"
+
+    - name: conversion_seen
+      type: number
+      sql: "SUM(receipts_seen) / NULLIF(SUM(frequency_seen), 0)"
+      title: "Conversion Seen"
+      
+    - name: conversion_not_seen
+      type: number
+      sql: "SUM(receipts_not_seen) / NULLIF(SUM(frequency_not_seen), 0)"
+      title: "Conversion Not Seen"
+      
+    - name: conversion_uplift
+      type: number
+      sql: "(({conversion_seen} / NULLIF({conversion_not_seen}, 0)) - 1)"
+      title: "Conversion Uplift"
+      
+    - name: sp_cr_uplift_calculation
+      type: number
+      sql: "ROUND({conversion_uplift} * 100,0)"
+      title: "SP CR Uplift Calculation"
+      
+    - name: sp_cr_uplift_negative
+      type: string
+      sql: "CASE WHEN {conversion_uplift} < 0 THEN CONCAT({sp_cr_uplift_calculation}, '% Uplift') ELSE '' END"
+      title: "SP CR Uplift Negative"
+      
+    - name: sp_cr_uplift_positive
+      type: string
+      sql: "CASE WHEN {conversion_uplift} > 0 THEN CONCAT('+', {sp_cr_uplift_calculation}, '% Uplift') ELSE '' END"
+      title: "SP CR Uplift Positive"
+      
+    - name: basket_uplift
+      type: number
+      sql: "(({with_cap_basket_size} / NULLIF({without_cap_basket_size}, 0)) - 1)"
+      title: "Basket Uplift"
+      
+    - name: sp_basket_uplift_calculation
+      type: number
+      sql: "ROUND({basket_uplift} * 100, 0)"
+      title: "SP Basket Uplift Calculation"
+      
+    - name: sp_basket_uplift_negative
+      type: string
+      sql: "CASE WHEN {basket_uplift} < 0 THEN CONCAT({sp_basket_uplift_calculation}, '% Uplift') ELSE '' END"
+      title: "SP Basket Uplift Negative"
+      
+    - name: sp_basket_uplift_positive
+      type: string
+      sql: "CASE WHEN {basket_uplift} > 0 THEN CONCAT('+', {sp_basket_uplift_calculation}, '% Uplift') ELSE '' END"
+      title: "SP Basket Uplift Positive"
+      
+    - name: sales_uplift_absolut
+      type: number
+      sql: "SUM(sales_seen) - {sales_expected}"
+      title: "Sales Uplift Absolute"
+      
+    - name: sales_expected
+      type: number
+      sql: "SUM(frequency_seen) * {conversion_not_seen} * {avg_sales_not_seen}"
+      title: "Sales Expected"
+      
+    - name: avg_sales_not_seen
+      type: number
+      sql: "SUM(sales_not_seen) / NULLIF(SUM(receipts_not_seen), 0)"
+      title: "Avg Sales Not Seen"
+      
+    - name: sales_uplift
+      type: number
+      sql: "(SUM(sales) / NULLIF((SUM(sales) - {sales_uplift_absolut}), 0) - 1)"
+      title: "Sales Uplift"
+      
+    - name: sales_uplift_no_negative
+      type: number
+      sql: "CASE WHEN {sales_uplift} < 0 THEN 0 ELSE {sales_uplift} END"
+      title: "Sales Uplift (No Negative)"
+
+    - name: with_cap_conversion_rate
+      type: number
+      sql: "100.0 * {sum_receipts_seen} / {sum_frequency_seen}"
+      title: "With CAP (Conversion Rate)"
+
+    - name: without_cap_conversion_rate
+      type: number
+      sql: "100.0 * {sum_receipts_not_seen} / {sum_frequency_not_seen}"
+      title: "Without CAP (Conversion Rate)"
+
+    - name: with_cap_basket_size
+      type: number
+      sql: "SUM(sales_seen) / NULLIF(SUM(receipts_seen), 0)"
+      title: "With CAP (Basket Size)"
+
+    - name: without_cap_basket_size
+      type: number
+      sql: "SUM(sales_not_seen) / NULLIF(SUM(receipts_not_seen), 0)"
+      title: "Without CAP (Basket Size)"
+
+    pre_aggregations:
+      - name: avg_sales_by_dow_and_month
+        dimensions:
+          - dow
+          - month
+        measures:
+          - avg_sales
+
+      - name: avg_revenue_by_dow_and_month
+        dimensions:
+          - dow
+          - month
+        measures:
+          - avg_revenue
+
+      - name: avg_frequency_by_dow_and_month
+        dimensions:
+          - dow
+          - month
+        measures:
+          - avg_frequency
+
+
+
+

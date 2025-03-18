@@ -117,8 +117,8 @@ export default function getBarChartOptions({
             return displayAsPercentage
               ? `${value}%`
               : formatValue(typeof value === 'number' ? value.toString() : value, {
-                  type: 'number',
-                });
+                type: 'number',
+              });
           },
         },
         title: {
@@ -168,8 +168,8 @@ export default function getBarChartOptions({
             return displayAsPercentage
               ? `${value}%`
               : formatValue(typeof value === 'number' ? value.toString() : value, {
-                  type: 'number',
-                });
+                type: 'number',
+              });
           },
         },
         title: {
