@@ -38,6 +38,14 @@ export const meta = {
       category: 'Chart data',
     },
     {
+      name: 'AbsolutePercentage',
+      type: 'boolean',
+      label: 'Absolute/Percentage',
+      description: 'Absolute/Percentage',
+      category: 'Configure chart',
+      defaultValue: false,
+    },
+    {
       name: 'lineMetrics',
       type: 'measure',
       array: true,
@@ -53,19 +61,26 @@ export const meta = {
       label: 'Show 2nd axis',
       category: 'Optional chart data',
       defaultValue: false,
-    },  
+    },
     {
       name: 'secondAxisTitle',
       type: 'string',
       label: '2nd axis title',
       description: 'The title for the chart',
       category: 'Optional chart data',
-    }, 
+    },
     {
       name: 'granularity',
-      type: 'granularity',
+      type: 'string',
       label: 'Granularity',
       defaultValue: 'week',
+      category: 'Variables to configure',
+    },
+    {
+      name: 'round',
+      type: 'boolean',
+      label: 'Round',
+      defaultValue: 'false',
       category: 'Variables to configure',
     },
     {
@@ -94,7 +109,7 @@ export const meta = {
       type: 'boolean',
       label: 'Show Labels',
       category: 'Chart settings',
-      defaultValue: false,
+      defaultValue: true,
     },
     {
       name: 'displayHorizontally',
@@ -120,6 +135,66 @@ export const meta = {
       name: 'yAxisTitle',
       type: 'string',
       label: 'Y-Axis Title',
+      category: 'Chart settings',
+    },
+    {
+      name: 'xAxisPosition',
+      type: 'string',
+      label: 'X-Axis Position',
+      category: 'Chart settings',
+    },
+    {
+      name: 'displayYaxis',
+      type: 'boolean',
+      label: 'display Y-axis',
+      category: 'Chart settings',
+    },
+    {
+      name: 'displayXaxis',
+      type: 'boolean',
+      label: 'display X-axis',
+      category: 'Chart settings',
+    },
+    {
+      name: 'impression',
+      type: 'boolean',
+      label: 'impression',
+      defaultValue: 'false',
+      category: 'Chart settings',
+    },
+    {
+      name: 'performance',
+      type: 'boolean',
+      label: 'performance',
+      defaultValue: 'false',
+      category: 'Chart settings',
+    },
+    {
+      name: 'Totalperformance',
+      type: 'boolean',
+      label: 'Total Performance',
+      defaultValue: 'false',
+      category: 'Chart settings',
+    },
+    {
+      name: 'optimization',
+      type: 'boolean',
+      label: 'Optimization',
+      defaultValue: 'false',
+      category: 'Chart settings',
+    },
+    {
+      name: 'KPIvalue',
+      type: 'string',
+      label: 'KPI value',
+      description: 'The kpi to display',
+      category: 'Configure chart',
+      array: true
+    },
+    {
+      name: 'PercentageSign',
+      type: 'boolean',
+      label: 'Show Percentage Sign',
       category: 'Chart settings',
     },
     {
@@ -165,7 +240,7 @@ export default defineComponent(Component, meta, {
         timeDimensions: [
           {
             dimension: inputs.xAxis?.name,
-            granularity: inputs.granularity,
+            granularity: asGranularity(inputs.granularity),
           },
         ],
         measures: [...inputs.metrics, ...(inputs.lineMetrics || [])],
@@ -175,7 +250,18 @@ export default defineComponent(Component, meta, {
             direction: 'desc',
           },
         ],
+
       }),
     };
   },
 });
+
+
+function asGranularity(gran: string | any): string | null {
+  if (typeof gran !== 'string') return null;
+
+  return gran === 'hour_group' || gran === 'total' ? 'hour' : gran;
+}
+
+
+

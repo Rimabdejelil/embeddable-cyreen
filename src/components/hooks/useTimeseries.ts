@@ -26,6 +26,8 @@ const addTime: { [granularity: string]: (date: Date | number, amount: number) =>
   second: addSeconds,
   minute: addMinutes,
   hour: addHours,
+  hour_group: addHours,
+  total: addHours,
   day: addDays,
   week: addWeeks,
   month: addMonths,
@@ -37,6 +39,8 @@ const subTime: { [granularity: string]: (date: Date | number, amount: number) =>
   second: subSeconds,
   minute: subMinutes,
   hour: subHours,
+  hour_group: subHours,
+  total: subHours,
   day: subDays,
   week: subWeeks,
   month: subMonths,
@@ -48,6 +52,8 @@ const unitsInSeconds = {
   second: 1,
   minute: 60,
   hour: 3600,
+  hour_group: 3600,
+  total: 3600,
   day: 86400,
   week: 604800,
   month: 2629800, // Roughly 30.44 days
@@ -57,7 +63,7 @@ const unitsInSeconds = {
 
 type Props = {
   xAxis: Dimension;
-  granularity?: Granularity;
+  granularity?: string;
 };
 
 export default (props: Props, sortOrder: string = 'asc') => {

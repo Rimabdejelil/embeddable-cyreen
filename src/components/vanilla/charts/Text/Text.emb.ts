@@ -2,6 +2,8 @@ import { EmbeddedComponentMeta, Inputs, defineComponent } from '@embeddable.com/
 
 import Component from './index';
 
+
+
 export const meta = {
   name: 'Text',
   label: 'Text component',
@@ -22,6 +24,13 @@ export const meta = {
       category: 'Configure chart'
     },
     {
+      name: 'granularity',
+      type: 'string',
+      label: 'Granularity',
+      description: 'The chosen granularity',
+      category: 'Configure chart'
+    },
+    {
       name: 'titleFontSize',
       type: 'number',
       label: 'Title font size in pixels',
@@ -33,13 +42,25 @@ export const meta = {
       label: 'Body font size in pixels',
       category: 'Formatting'
     },
+    {
+      name: 'icon',
+      type: 'string',
+      label: 'Icon',
+      description: 'Choose an icon to display',
+      category: 'Configure chart',
+      
+      
+    },
   ]
 } as const satisfies EmbeddedComponentMeta;
 
+
 export default defineComponent(Component, meta, {
-  props: (inputs: Inputs<typeof meta>) => {
+  
+  props: (inputs: Inputs<typeof meta>, _state, clientContext) => {
     return {
-      ...inputs
+      ...inputs,
+      clientContext // Add it to the props
     };
   }
 });

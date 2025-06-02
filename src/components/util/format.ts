@@ -14,11 +14,13 @@ type Options = {
 
 function numberFormatter(dps: number | undefined | null) {
   const fallback = dps == null || dps < 0;
-  return new Intl.NumberFormat(undefined, {
-    minimumFractionDigits: fallback ? 0 : dps, // Minimum number of digits after the decimal
-    maximumFractionDigits: fallback ? 2 : dps, // Maximum number of digits after the decimal
+  return new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: fallback ? 0 : dps,
+    maximumFractionDigits: fallback ? 2 : dps,
+    useGrouping: true, // ensures thousands separators
   });
 }
+
 
 const dateFormatter = new Intl.DateTimeFormat();
 

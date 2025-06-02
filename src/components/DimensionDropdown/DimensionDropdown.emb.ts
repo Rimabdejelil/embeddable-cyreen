@@ -29,6 +29,12 @@ export const meta: EmbeddedComponentMeta = {
             label: 'Default value',
             description: 'Initial value',
         },
+        {
+            name: 'placeholder',
+            type: 'string',
+            label: 'Place Holder',
+            description: 'Place holder',
+        },
     ],
     events: [
         {
@@ -47,7 +53,7 @@ export const meta: EmbeddedComponentMeta = {
         {
             name: 'chosen value',  // Variable created automatically when this component is added
             type: 'string',
-            defaultValue: 'Value.noFilter()', // Initial variable value (this can also be set in the no-code builder)
+            defaultValue: 'impressions.name_store', // Initial variable value (this can also be set in the no-code builder)
             inputs: ['defaultValue'], // Connects the variable to the 'defaultValue' input, which is passed into the React component
             events: [{ name: 'onChange', property: 'value' }], // On the 'onChange' event, update the 'chosen value' variable with the 'value' property from the event
         },
@@ -58,11 +64,13 @@ export const meta: EmbeddedComponentMeta = {
 
 export default defineComponent<Inputs>(DropdownDimensionNames, meta, {
     props: (inputs) => {
-        const dimensionNames = (inputs.values ?? []).map(dimension => dimension.name);
+        const dimensions = inputs.values ?? [];
+
         return {
             ...inputs,
-            dimensionNames,
+            dimensions,
         };
+        
     },
     events: {
         onChange: (value) => ({ value: value || Value.noFilter() }),

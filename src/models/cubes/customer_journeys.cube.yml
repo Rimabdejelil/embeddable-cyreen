@@ -1,0 +1,249 @@
+cubes:
+  - name: customer_journeys
+    title: Customer Journeys
+    sql_table: public.customer_journeys
+    data_source: my-db
+
+    dimensions:
+      - name: id_customer_journey
+        sql: id_customer_journey
+        type: number
+        primary_key: true
+
+      - name: id_company
+        sql: id_company
+        type: number
+
+      - name: year
+        sql: year
+        type: number
+
+      - name: month
+        sql: TO_CHAR(date::DATE, 'FMMonth')  
+        type: string 
+
+      - name: week
+        sql: week
+        type: number
+
+      - name: dow
+        sql: dow
+        type: number
+
+      - name: hour
+        sql: hour
+        type: number
+
+      - name: hour_group
+        sql: hour_group
+        type: string
+
+      - name: timestamp
+        sql: timestamp
+        type: time
+
+      - name: date
+        sql: date
+        type: time
+
+      - name: id_market_type
+        sql: id_market_type
+        type: number
+
+      - name: name_market_type
+        sql: name_market_type
+        type: string
+
+      - name: name_retailer
+        sql: name_retailer
+        type: string
+
+      - name: id_company_retailer
+        sql: id_company_retailer
+        type: number
+
+      - name: name_store
+        sql: name_store
+        type: string
+
+      - name: id_store
+        sql: id_store
+        type: number
+
+      - name: zip_code
+        sql: zip_code
+        type: string
+
+      - name: latitude
+        sql: latitude
+        type: number
+
+      - name: longitude
+        sql: longitude
+        type: number
+
+      - name: name_country
+        sql: name_country
+        type: string
+
+      - name: name_region
+        sql: name_region
+        type: string
+
+      - name: clouds
+        sql: clouds
+        type: number
+
+      - name: feels_like
+        sql: feels_like
+        type: number
+
+      - name: humidity
+        sql: humidity
+        type: number
+
+      - name: temp
+        sql: temp
+        type: number
+
+      - name: rain_per_hour
+        sql: rain_per_hour
+        type: number
+
+      - name: rain_boolean
+        sql: rain_boolean
+        type: boolean
+
+      - name: snow_per_hour
+        sql: snow_per_hour
+        type: number
+
+      - name: snow_boolean
+        sql: snow_boolean
+        type: boolean
+
+      - name: visibility
+        sql: visibility
+        type: number
+
+      - name: wind_speed
+        sql: wind_speed
+        type: number
+
+      - name: number_receipt_identifier
+        sql: number_receipt_identifier
+        type: string
+
+      - name: number_tag
+        sql: number_tag
+        type: string
+
+      - name: name_tag_type
+        sql: name_tag_type
+        type: string
+
+      - name: total_readings
+        sql: total_readings
+        type: number
+
+      - name: duration
+        sql: duration
+        type: string
+
+      
+
+      - name: difference_sec
+        sql: difference_sec
+        type: number
+
+      - name: difference_min
+        sql: difference_min
+        type: number
+
+      - name: sales
+        sql: sales
+        type: number
+
+      - name: revenue
+        sql: revenue
+        type: number
+
+      - name: store_size
+        sql: store_size
+        type: number
+
+      - name: last_edit
+        sql: last_edit
+        type: time
+
+      - name: timestamp_last_edit
+        sql: timestamp_last_edit
+        type: time
+
+      - name: installed_checkouts
+        sql: installed_checkouts
+        type: number
+
+      - name: installed_trolleys
+        sql: installed_trolleys
+        type: number
+
+      - name: installed_baskets
+        sql: installed_baskets
+        type: number
+
+      - name: batch_number
+        sql: batch_number
+        type: number
+
+      - name: number_root
+        sql: number_root
+        type: number
+
+      - name: weekday
+        sql: CASE WHEN EXTRACT(DOW FROM date::DATE) = 0 THEN 7 ELSE EXTRACT(DOW FROM date::DATE) END
+        type: number
+
+
+      - name: duration_group_minutes
+        type: number
+        sql: |
+          CASE 
+            WHEN NULLIF((duration), '') IS NULL THEN NULL
+            ELSE 
+        
+              CEIL(
+                (
+                  (EXTRACT(HOUR FROM CAST((duration) AS TIME)) * 60 + 
+                  EXTRACT(MINUTE FROM CAST((duration) AS TIME)) + 
+                  EXTRACT(SECOND FROM CAST((duration) AS TIME)) / 60.0
+                  - 1  
+                 ) / 5
+              ) * 5
+          END
+
+    measures:
+      - name: average
+        type: number
+        sql: ROUND(AVG(difference_min))
+        title: "Average"
+
+
+      - name: average_sales
+        type: number
+        sql: "SUM(sales) / COUNT(DISTINCT (number_receipt_identifier))"
+        title: "Average Sales"
+
+      - name: average_revenue
+        type: number
+        sql: "SUM(revenue) /  COUNT(DISTINCT (number_receipt_identifier))"
+        title: "Average Revenue"
+
+      - name: average_shopper
+        type: number
+        sql: "COUNT(DISTINCT (number_receipt_identifier))"
+        title: "Average Shoppers"
+
+
+      
+

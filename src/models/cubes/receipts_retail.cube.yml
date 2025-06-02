@@ -1,0 +1,291 @@
+cubes:
+  - name: receipts_retail
+    title: Receipts Retail
+    sql_table: public.receipts_retail
+    data_source: my-db
+
+    dimensions:
+      - name: id_receipts_retail
+        sql: id_receipts_retail
+        type: number
+        primary_key: true
+
+      - name: id_company
+        sql: id_company
+        type: number
+
+      - name: year
+        sql: year
+        type: number
+
+      ##- name: month
+        ##sql: month
+        ##type: number
+
+      - name: week
+        sql: week
+        type: number
+
+      ##- name: dow
+        ##sql: dow
+        ##type: number
+
+      - name: dow
+        sql: CASE EXTRACT(DOW FROM date::DATE)
+            WHEN 0 THEN 'Sunday'
+            WHEN 1 THEN 'Monday'
+            WHEN 2 THEN 'Tuesday'
+            WHEN 3 THEN 'Wednesday'
+            WHEN 4 THEN 'Thursday'
+            WHEN 5 THEN 'Friday'
+            WHEN 6 THEN 'Saturday'
+          END
+        type: number
+
+      - name: month1
+        sql: CASE EXTRACT(MONTH FROM date::DATE)
+            WHEN 1 THEN 'January'
+            WHEN 2 THEN 'February'
+            WHEN 3 THEN 'March'
+            WHEN 4 THEN 'April'
+            WHEN 5 THEN 'May'
+            WHEN 6 THEN 'June'
+            WHEN 7 THEN 'July'
+            WHEN 8 THEN 'August'
+            WHEN 9 THEN 'September'
+            WHEN 10 THEN 'October'
+            WHEN 11 THEN 'November'
+            WHEN 12 THEN 'December'
+          END
+        type: number
+
+      - name: month
+        sql: TRIM(TO_CHAR(date::DATE, 'Month')) || ' ' || EXTRACT(YEAR FROM date::DATE)
+        type: string
+
+
+
+      - name: hour
+        sql: hour
+        type: number
+
+      - name: hour_group
+        sql: hour_group
+        type: string
+
+      - name: timestamp
+        sql: timestamp
+        type: time
+
+      - name: date
+        sql: date
+        type: time
+
+      - name: id_market_type
+        sql: id_market_type
+        type: number
+
+      - name: name_market_type
+        sql: name_market_type
+        type: string
+
+      - name: name_retailer
+        sql: name_retailer
+        type: string
+
+      - name: id_company_retailer
+        sql: id_company_retailer
+        type: number
+
+      - name: name_store
+        sql: name_store
+        type: string
+
+      - name: id_store
+        sql: id_store
+        type: number
+
+      - name: installed_checkouts
+        sql: installed_checkouts
+        type: number
+
+      - name: installed_trolleys
+        sql: installed_trolleys
+        type: number
+
+      - name: installed_baskets
+        sql: installed_baskets
+        type: number
+
+      - name: store_size
+        sql: store_size
+        type: number
+
+      - name: name_location_type
+        sql: name_location_type
+        type: string
+
+      - name: zip_code
+        sql: zip_code
+        type: string
+
+      - name: latitude
+        sql: latitude
+        type: number
+
+      - name: longitude
+        sql: longitude
+        type: number
+
+      - name: name_country
+        sql: name_country
+        type: string
+
+      - name: name_region
+        sql: name_region
+        type: string
+
+      - name: clouds
+        sql: clouds
+        type: number
+
+      - name: feels_like
+        sql: feels_like
+        type: number
+
+      - name: humidity
+        sql: humidity
+        type: number
+
+      - name: temp
+        sql: temp
+        type: number
+
+      - name: rain_per_hour
+        sql: rain_per_hour
+        type: number
+
+      - name: rain_boolean
+        sql: rain_boolean
+        type: boolean
+
+      - name: snow_per_hour
+        sql: snow_per_hour
+        type: number
+
+      - name: snow_boolean
+        sql: snow_boolean
+        type: boolean
+
+      - name: visibility
+        sql: visibility
+        type: number
+
+      - name: wind_speed
+        sql: wind_speed
+        type: number
+
+      - name: number_checkout
+        sql: number_checkout
+        type: number
+
+      - name: checkout_category
+        sql: checkout_category
+        type: string
+
+      - name: name_device_type
+        sql: name_device_type
+        type: string
+
+      - name: frequency
+        sql: frequency
+        type: number
+
+      - name: sales
+        sql: sales
+        type: number
+
+      - name: revenue
+        sql: revenue
+        type: number
+
+      - name: last_edit
+        sql: last_edit
+        type: time
+
+      - name: timestamp_last_edit
+        sql: timestamp_last_edit
+        type: time
+
+      - name: batch_number
+        sql: batch_number
+        type: number
+
+      - name: number_root
+        sql: number_root
+        type: number
+
+
+    measures :
+
+      - name: month_sort
+        sql: |
+          STRING_AGG(
+            DISTINCT 
+            (EXTRACT(YEAR FROM date::DATE)::INT * 100 + EXTRACT(MONTH FROM date::DATE)::INT)::TEXT, 
+            ', '
+          )
+        type: string
+        title: "month sort"
+
+
+      
+
+
+      - name: weekday_agg_string
+        sql: |
+          STRING_AGG(
+            DISTINCT 
+            CASE 
+              WHEN EXTRACT(DOW FROM date::DATE) = 0 THEN '7' 
+              ELSE CAST(EXTRACT(DOW FROM date::DATE) AS VARCHAR) 
+            END, 
+            ', '
+          )
+        type: string
+        title: "Weekdays (Aggregated)"
+
+      - name: sum_frequency
+        type: sum
+        sql: frequency
+        title: "Total Frequency"
+
+      - name: sum_sale
+        type: sum
+        sql: sales
+        title: "Total Sale"
+
+      - name: sum_revenue
+        type: sum
+        sql: revenue
+        title: "Total revenue"
+
+      - name: daily_shoppers
+        type: number
+        sql: "SUM(frequency) / COUNT(DISTINCT DATE(timestamp))"
+        title: "Daily Shoppers"
+
+      - name: average_sales
+        type: number
+        sql: "SUM(sales) / SUM(frequency)"
+        title: "Average Sales"
+      
+      - name: average_revenue
+        type: number
+        sql: "SUM(revenue) / SUM(frequency)"
+        title: "Average Revenue"
+
+      - name: null_value
+        type: number
+        sql: "SUM(revenue) - SUM(revenue)"
+        title: "Null Value"

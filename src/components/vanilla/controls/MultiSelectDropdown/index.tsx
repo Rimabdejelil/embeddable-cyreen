@@ -107,9 +107,8 @@ export default (props: Props) => {
               setTriggerBlur(false);
               set(o[props.property?.name || ''] || '');
             }}
-            className={`flex items-left items-center min-h-[36px] px-3 py-2 hover:bg-black/5 cursor-pointer font-normal ${
-              value?.includes(o[props.property?.name || '']) ? 'bg-black/5' : ''
-            } truncate`}
+            className={`flex items-left items-center min-h-[36px] px-3 py-2 hover:bg-black/5 cursor-pointer font-normal ${value?.includes(o[props.property?.name || '']) ? 'bg-black/5' : ''
+              } truncate`}
           >
             {value?.includes(o[props.property?.name || '']) ? <Checkbox /> : <CheckboxEmpty />}
             <span className="font-normal pl-1 truncate" title={o[props.property?.name || '']}>
@@ -140,16 +139,14 @@ export default (props: Props) => {
           onFocus={() => setFocus(true)}
           onBlur={() => setTriggerBlur(true)}
           onChange={(e) => performSearch(e.target.value)}
-          className={`outline-none bg-transparent leading-9 h-9 border-0 px-3 w-full cursor-pointer text-sm ${
-            focus || !value ? '' : 'opacity-0'
-          }`}
+          className={`outline-none bg-transparent leading-9 h-9 border-0 px-3 w-full cursor-pointer text-sm ${focus || !value ? '' : 'opacity-0'
+            }`}
         />
 
         {!!value && (
           <span
-            className={`absolute w-[calc(100%-2rem)] whitespace-nowrap overflow-hidden truncate rounded-xl left-3 top-1 h-8 leading-8 block pointer-events-none text-sm ${
-              focus ? 'hidden' : ''
-            }`}
+            className={`absolute w-[calc(100%-2rem)] whitespace-nowrap overflow-hidden truncate rounded-xl left-3 top-1 h-8 leading-8 block pointer-events-none text-sm ${focus ? 'hidden' : ''
+              }`}
           >
             Selected {value.length} {value.length === 1 ? 'option' : 'options'}
           </span>

@@ -1,6 +1,6 @@
 import { useEmbeddableState } from '@embeddable.com/react';
 import { Dimension, Granularity } from '@embeddable.com/core';
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 import Container from '../../Container';
 import Dropdown from '../Dropdown';
 
@@ -31,7 +31,7 @@ type GranularityResponse = {
 export default (props: Props) => {
 
     const [granularity, setGranularity] = useState(props.defaultValue)
-  
+
     const options: Granularity[] = [
         'second',
         'minute',
@@ -54,7 +54,7 @@ export default (props: Props) => {
         year: undefined //clears filter
     }
 
-    const handleChange = (granularity:string) => {
+    const handleChange = (granularity: string) => {
         const eventObject = {
             value: granularity,
             dateRange: {
@@ -63,14 +63,14 @@ export default (props: Props) => {
                 relativeTimeString: timeFilters[granularity]
             }
         }
-        props.onChange(eventObject); 
-        setGranularity(granularity as Granularity);       
+        props.onChange(eventObject);
+        setGranularity(granularity as Granularity);
     }
 
     const granularityOptions = (): GranularityResponse => {
         const data: { value: Granularity }[] = [];
         //display options selected by user
-        options.filter(option => props[option])?.forEach((option) => data.push({value: option}) );
+        options.filter(option => props[option])?.forEach((option) => data.push({ value: option }));
         return {
             isLoading: false,
             data: data

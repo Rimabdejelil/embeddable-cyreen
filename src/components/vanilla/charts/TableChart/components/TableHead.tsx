@@ -11,6 +11,16 @@ type Props = {
   minColumnWidth?: number;
 }
 
+// Column title mapping function
+const mapColumnTitle = (title: string) => {
+  const mappings: Record<string, string> = {
+    'Total Frequency': 'Frequency',
+    'Total revenue': 'Revenue',
+    'Total Sale': 'Sales'
+  };
+  return mappings[title] || title;
+};
+
 const TableHead = ({ columns, sortBy, sortDirection, onSortingChange, minColumnWidth }: Props) => {
   return (
     <thead className="border-y border-[#B8BDC6]">
@@ -23,6 +33,9 @@ const TableHead = ({ columns, sortBy, sortDirection, onSortingChange, minColumnW
                 ? SortDirection.DESCENDING 
                 : SortDirection.ASCENDING 
               : SortDirection.ASCENDING;
+
+              const displayTitle = mapColumnTitle(column.title || column.name);
+
 
             return (
               <th
@@ -39,7 +52,7 @@ const TableHead = ({ columns, sortBy, sortDirection, onSortingChange, minColumnW
               >
                 <div className="flex items-center gap-1 hover:text-black">
                   <span className="text-[#333942] mr-1 truncate">
-                    {column.title}
+                    {displayTitle} {/* Use the mapped title here */}
                   </span>
 
                   {

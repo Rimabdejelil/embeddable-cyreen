@@ -2,29 +2,44 @@ import React, { useState } from 'react';
 
 const GranularityPickerComponent = ({
   defaultGranularity,
+  dashboard,
   onPickGranularity,
 }: {
   defaultGranularity: string;
+  dashboard: string;
   onPickGranularity: (value: string) => void;
 }) => {
   const [selectedGranularity, setSelectedGranularity] = useState<string>(defaultGranularity);
 
-  // Handle granularity selection
+  const granularityLabels: { [key: string]: string } = {
+    hour: 'Hourly',
+    hour_group: 'Hour Group',
+    day: 'Daily',
+    week: 'Weekly',
+    month: 'Monthly',
+    total: 'Total',
+  };
+
+  const availableGranularities =
+    dashboard === 'overview'
+      ? ['day', 'week', 'month']
+      : ['hour', 'hour_group', 'day', 'week', 'month', 'total'];
+
   const handleGranularityChange = (value: string) => {
     setSelectedGranularity(value);
-    onPickGranularity(value); // Fire the event with the selected value
+    onPickGranularity(value);
   };
 
   return (
     <div className="granularity-picker-container">
       <div className="granularity-options">
-        {['hour', 'day', 'month', 'year'].map((granularity) => (
+        {availableGranularities.map((granularity) => (
           <button
             key={granularity}
             className={`granularity-button ${selectedGranularity === granularity ? 'selected' : ''}`}
             onClick={() => handleGranularityChange(granularity)}
           >
-            {granularity.charAt(0).toUpperCase() + granularity.slice(1)}
+            {granularityLabels[granularity]}
           </button>
         ))}
       </div>
@@ -35,35 +50,47 @@ const GranularityPickerComponent = ({
           flex-direction: column;
           align-items: center;
           gap: 10px;
+          width: 100%;
         }
 
         .granularity-options {
           display: flex;
-          gap: 12px;
+          gap: 8px;
+          justify-content: space-evenly;
+          width: 100%;
         }
 
         .granularity-button {
-          padding: 12px 24px;
-          font-size: 16px;
+          height: 80px;
+          flex: 1 1 100px;
+          min-width: 20px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0 8px;
+          font-size: 14px;
           font-weight: bold;
           border: none;
           border-radius: 8px;
           cursor: pointer;
-          background: linear-gradient(135deg, #ff6b00, #ff2e2e);
-          color: white;
+          white-space: nowrap;
+          background: linear-gradient(135deg, #f2f2f2, #e6e6e6);
+          color: black;
           transition: all 0.3s ease-in-out;
-          box-shadow: 0 4px 8px rgba(255, 47, 47, 0.3);
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
         .granularity-button:hover {
           transform: translateY(-2px);
-          background: linear-gradient(135deg, #ff5722, #d32f2f);
-          box-shadow: 0 6px 12px rgba(211, 47, 47, 0.4);
+          background: #AF3241;
+          color: white;
+          box-shadow: 0 6px 12px rgba(175, 50, 65, 0.4);
         }
 
         .granularity-button.selected {
-          background: linear-gradient(135deg, #d32f2f, #b71c1c);
-          box-shadow: 0 6px 12px rgba(183, 28, 28, 0.5);
+          background: #AF3241;
+          color: white;
+          box-shadow: 0 6px 12px rgba(110, 35, 50, 0.5);
           transform: scale(1.05);
         }
       `}</style>

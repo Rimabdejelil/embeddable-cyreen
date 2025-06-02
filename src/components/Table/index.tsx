@@ -42,7 +42,8 @@ const TableComponent = ({ ds, columns, results }: Props) => {
         {/* Table Head */}
         <thead className="table-header">
           <tr>
-            <th colSpan={columns.length + 1} className="table-header-cell title">
+            <th colSpan={columns.length + 1} className="table-header-cell title"
+            >
               Store Table
             </th>
           </tr>
@@ -56,15 +57,17 @@ const TableComponent = ({ ds, columns, results }: Props) => {
                 <td key={col.name} className={`table-cell ${colIndex === 0 ? "first-column" : ""}`}>
                   {row[col.name] !== undefined
                     ? colIndex === 1
-                      ? row[col.name]
-                        .toLocaleString()  // Format second column with commas
+                      ? parseFloat(row[col.name]) > 999
+                        ? parseFloat(row[col.name]).toLocaleString("en-US")
+                        : row[col.name]
                       : row[col.name]
                     : "N/A"}
                 </td>
+
               ))}
               <td className="table-cell">
                 {totalValue > 0
-                  ? ((parseFloat(row["impressions.impression_unfiltered_calculation"]) / totalValue) * 100).toFixed(0) + "%"
+                  ? ((parseFloat(row["impressions.impression_unfiltered_calculation2"]) / totalValue) * 100).toFixed(0) + "%"
                   : "0.00%"}
               </td>
             </tr>
@@ -75,21 +78,24 @@ const TableComponent = ({ ds, columns, results }: Props) => {
       {/* Component Styles */}
       <style jsx>{`
         .table-container {
-          overflow: auto;
-          padding: 20px;
+          overflow: hidden;
+          padding: 15px;
+          height:100%;
           background-color: #fff;
-          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+          box-shadow: 0 0 10px rgba(0, 0, 0, 0.15);
           border-radius: 8px;
           font-family: Arial, sans-serif;
           font-size: 13px;
+          border: 1px solid #ccc,
         }
 
         .table {
           width: 100%;
+          height:100%;
           border-collapse: collapse;
-          border: 1px solid #ddd;
           border-radius: 8px;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+          border: 1px solid #ccc,
+          box-shadow: 0 0 10px rgba(0, 0, 0, 0.15);
         }
 
         .table-header {
@@ -106,11 +112,15 @@ const TableComponent = ({ ds, columns, results }: Props) => {
         }
 
         .table-header-cell.title {
-          font-size: 18px;
+          font-size: 23px;
           text-align: left;
-          font-weight: bold;
           padding: 20px 12px;
+          font-family: Arial, sans-serif;
+          color: white;
+          font-weight: normal; /* Changed from bold to normal */
+          text-transform: none; /* Changed from uppercase to none */
         }
+
 
         .table-row {
           transition: background-color 0.2s ease; /* Smooth color transition between rows */

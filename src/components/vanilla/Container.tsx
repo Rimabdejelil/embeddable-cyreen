@@ -1,4 +1,4 @@
-import { DataResponse } from '@embeddable.com/core';
+import { DataResponse, Dimension, Measure } from '@embeddable.com/core';
 import React, { PropsWithChildren, useEffect, useRef, useState } from 'react';
 import { twMerge } from 'tailwind-merge';
 
@@ -22,6 +22,16 @@ export type ContainerProps = {
   results?: DataResponse | DataResponse[];
   setResizeState?: (resizing: boolean) => void;
   title?: string;
+  translatedTitle?: string;
+  granularity?: string;
+  metrics?: Measure[];
+  impression?: boolean;
+  Totalperformance?: boolean;
+  optimization?: boolean;
+  KPIvalue?: string[];
+  xAxis?: Dimension;
+  showLabels?: boolean;
+  onToggleLabels?: (show: boolean) => void;
 };
 
 export default ({
@@ -39,58 +49,94 @@ export default ({
   const { height } = useResize(refResize, onResize || null);
   const [preppingDownload, setPreppingDownload] = useState<boolean>(false);
 
-  //Detect when the component is being resized by the user
   useEffect(() => {
     if (!setResizeState) {
       return;
     }
     const currentHeight = height;
-    // If refPrevHeight is null, this is the first render, so initialize it
     if (refPrevHeight.current === null) {
       refPrevHeight.current = currentHeight;
     }
     if (currentHeight !== refPrevHeight.current) {
       setResizeState?.(true);
-      // Clear the timeout if it exists, to debounce the resize state reset
       if (refResizingTimeout.current) {
         window.clearTimeout(refResizingTimeout.current);
       }
-      // Set a timer to reset the resize state after 300ms
       refResizingTimeout.current = window.setTimeout(() => {
         setResizeState?.(false);
       }, 300);
     }
-    // Update the previous height with the current height
     refPrevHeight.current = currentHeight;
-    // Clean up the timeout when the component unmounts
     return () => {
       if (refResizingTimeout.current) {
         window.clearTimeout(refResizingTimeout.current);
       }
     };
-  }, [height, setResizeState]); // Depend on height, so it runs whenever height changes
+  }, [height, setResizeState]);
 
   const { isLoading, error, data } = Array.isArray(props.results)
     ? {
-        isLoading: props.results.some((result) => result.isLoading),
-        error: props.results.some((result) => result.error),
-        data: props.results.flatMap((result) => result.data).filter((data) => data),
-      }
+      isLoading: props.results.some((result) => result.isLoading),
+      error: props.results.some((result) => result.error),
+      data: props.results.flatMap((result) => result.data).filter((data) => data),
+    }
     : props.results || {};
   const noData = !isLoading && !data?.length;
 
   useFont();
+  const granularityLabels = {
+    hour: 'Hourly',
+    month: 'Monthly',
+    hour_group: 'Hour Group',
+    total: 'Total',
+    week: 'Weekly',
+    day: 'Daily',
+  };
+
+  const displayGranularity =
+    props.impression && props.granularity ? (granularityLabels[props.granularity] || '') : '';
 
   return (
     <div className="h-full relative font-embeddable text-sm flex flex-col">
       {props.enableDownloadAsCSV || props.enableDownloadAsPNG ? (
-        <div className={`${!props.title ? 'h-[32px] w-full' : ''}`}>
+        <div className={`${!props.translatedTitle ? 'h-[32px] w-full' : ''}`}>
           {/* spacer to keep charts from overlaying download menu if no title*/}
         </div>
       ) : null}
       <Spinner show={isLoading || preppingDownload} />
       <div className="h-full relative flex flex-col" ref={refExportPNGElement}>
-        <Title title={props.title} />
+        {props.optimization ? (
+          <Title
+            title={
+              props.KPIvalue?.includes('Conversion Rate')
+                ? 'Conversion Rate'
+                : props.KPIvalue?.includes('Average Basket Size')
+                  ? 'Average Basket Size'
+                  : props.KPIvalue?.includes('Sales Uplift')
+                    ? 'Sales Uplift'
+                    : props.KPIvalue?.includes('Conversion Uplift')
+                      ? 'Conversion Uplift'
+                      : props.translatedTitle
+            }
+          />
+        ) : displayGranularity ? (
+          <Title title={props.translatedTitle + ` ${displayGranularity}`} />
+        ) : props.xAxis === "receipts_retail.hour" ? (
+          <Title title='Hourly' />
+
+        ) : props.xAxis === "receipts_retail.date" ? (
+          <Title title='Daily' />
+
+        ) : props.xAxis === "receipts_retail.dow" ? (
+          <Title title='Weekday' />
+          
+        ) : props.xAxis === "receipts_retail.month" ? (
+          <Title title='Monthly' />
+        )
+          : (
+            <Title title={props.translatedTitle} />
+          )}
+
         <Description description={props.description} />
 
         <div ref={refResize} className={twMerge(`relative grow flex flex-col`, className || '')}>
@@ -98,18 +144,16 @@ export default ({
             className={twMerge('-z-0 flex flex-col', childContainerClassName || '')}
             style={{ height: `${height}px` }}
           >
-            {
-              height && props.results && (error || noData) ? (
-                <div className="h-full flex items-center justify-center font-embeddable text-sm">
-                  <WarningIcon />
-                  <div className="whitespace-pre-wrap p-4 max-w-sm text-sm">
-                    {error || '0 results'}
-                  </div>
+            {height && props.results && (error || noData) ? (
+              <div className="h-full flex items-center justify-center font-embeddable text-sm">
+                <WarningIcon />
+                <div className="whitespace-pre-wrap p-4 max-w-sm text-sm">
+                  {error || '0 results'}
                 </div>
-              ) : height ? (
-                children
-              ) : null // Ensure height is calculated before rendering charts to prevent libraries (e.g., ChartJS) from overflowing the container
-            }
+              </div>
+            ) : height ? (
+              children
+            ) : null}
           </div>
           {isLoading && !data?.length && (
             <div className="absolute left-0 top-0 w-full h-full z-10 skeleton-box bg-gray-300 overflow-hidden rounded" />
@@ -119,7 +163,7 @@ export default ({
       {!isLoading && (props.enableDownloadAsCSV || props.enableDownloadAsPNG) ? (
         <DownloadMenu
           csvOpts={{
-            chartName: props.title || 'chart',
+            chartName: props.translatedTitle || 'chart',
             props: {
               ...props,
               results: props.results,
@@ -128,9 +172,11 @@ export default ({
           }}
           enableDownloadAsCSV={props.enableDownloadAsCSV}
           enableDownloadAsPNG={props.enableDownloadAsPNG}
-          pngOpts={{ chartName: props.title || 'chart', element: refExportPNGElement.current }}
+          pngOpts={{ chartName: props.translatedTitle || 'chart', element: refExportPNGElement.current }}
           preppingDownload={preppingDownload}
           setPreppingDownload={setPreppingDownload}
+          showLabels={props.showLabels}
+          onToggleLabels={props.onToggleLabels}
         />
       ) : null}
     </div>

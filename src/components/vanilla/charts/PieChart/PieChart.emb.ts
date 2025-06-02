@@ -25,12 +25,13 @@ export const meta = {
       category: 'Chart data',
     },
     {
-      name: 'metric',
+      name: 'metrics',
       type: 'measure',
       label: 'Metric',
       config: {
         dataset: 'ds',
       },
+      array: true,
       category: 'Chart data',
     },
     {
@@ -121,7 +122,7 @@ export default defineComponent(Component, meta, {
       results: loadData({
         from: inputs.ds,
         dimensions: [inputs.slice],
-        measures: [inputs.metric],
+        measures: inputs.metrics,
       }),
     };
   },

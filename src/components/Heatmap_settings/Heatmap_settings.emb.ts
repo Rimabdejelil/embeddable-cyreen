@@ -37,6 +37,14 @@ export const meta = {
             category: 'Configure chart',
             defaultValue: 'impressions.impression_unfiltered_calculation'
         },
+        {
+            name: 'AbsolutePercentage',
+            type: 'boolean',
+            label: 'Absolute/Percentage',
+            description: 'Absolute/Percentage',
+            category: 'Configure chart',
+            defaultValue: false,
+        },
     ]
 } as const satisfies EmbeddedComponentMeta;
 

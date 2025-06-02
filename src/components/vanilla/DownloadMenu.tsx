@@ -5,8 +5,12 @@ import IconDownloadCSV from '../icons/DownloadCSV';
 import IconDownloadPNG from '../icons/DownloadPNG';
 import IconVerticalEllipsis from '../icons/VerticalEllipsis';
 import downloadAsCSV from '../util/downloadAsCSV';
+import IconEye from '../icons/Eye';
+import IcoEyeOff from '../icons/EyeOff';
+
 import downloadAsPNG from '../util/downloadAsPNG';
 import { ContainerProps } from './Container';
+import IconEyeOff from '../icons/EyeOff';
 
 interface CSVProps extends ContainerProps {
   results?: DataResponse | DataResponse[];
@@ -26,6 +30,8 @@ type Props = {
   };
   preppingDownload: boolean;
   setPreppingDownload: Dispatch<SetStateAction<boolean>>;
+  showLabels?: boolean;
+  onToggleLabels?: (show: boolean) => void;
 };
 
 const DownloadMenu: React.FC<Props> = (props) => {
@@ -36,12 +42,13 @@ const DownloadMenu: React.FC<Props> = (props) => {
     pngOpts,
     preppingDownload,
     setPreppingDownload,
+    showLabels,
+    onToggleLabels
   } = props;
   const [showMenu, setShowMenu] = useState<boolean>(false);
   const [isDownloadStarted, setIsDownloadStarted] = useState<boolean>(false);
   const refFocus = useRef<HTMLInputElement>(null);
 
-  // Need a useEffect here because we want a render cycle to complete so the menu closes pre-html2canvas
   useEffect(() => {
     if (isDownloadStarted && preppingDownload) {
       if (!pngOpts) {
@@ -50,11 +57,8 @@ const DownloadMenu: React.FC<Props> = (props) => {
       }
       const { chartName, element } = pngOpts;
       if (element) {
-        // Strip out any characters that aren't alphanumeric or spaces
         const cleanedChartName = chartName.replace(/([^a-zA-Z0-9 ]+)/gi, '-');
         const timestamp = new Date().toISOString();
-        // Without the timeout, the spinner doesn't show up due to html2canvas stopping everything
-        // We can't clear this timeout because the download will be cancelled due to useEffect cleanup
         setTimeout(() => {
           downloadAsPNG(element, `${cleanedChartName}-${timestamp}.png`, setPreppingDownload);
         }, 200);
@@ -63,7 +67,6 @@ const DownloadMenu: React.FC<Props> = (props) => {
     }
   }, [isDownloadStarted, pngOpts, preppingDownload, setPreppingDownload]);
 
-  // Handle CSV downloads using supplied options
   const handleCSVClick = (e: React.MouseEvent<HTMLElement>) => {
     e.preventDefault();
     if (!csvOpts) {
@@ -71,7 +74,6 @@ const DownloadMenu: React.FC<Props> = (props) => {
       return;
     }
     const { chartName, props: csvProps } = csvOpts;
-    // concatenate results data if results is an array (from pivot table)
     let data: DataResponse['data'] = [];
     if (Array.isArray(csvProps.results)) {
       data = csvProps.results.reduce((acc: DataResponse['data'] = [], result) => {
@@ -92,7 +94,6 @@ const DownloadMenu: React.FC<Props> = (props) => {
     }
   }, [showMenu]);
 
-  // Handle the Click on the PNG icon - triggers the useEffect above
   const handlePNGClick = (e: React.MouseEvent<HTMLElement>) => {
     e.preventDefault();
     setShowMenu(false);
@@ -100,17 +101,23 @@ const DownloadMenu: React.FC<Props> = (props) => {
     setIsDownloadStarted(true);
   };
 
-  // Toggle the download menu
+  const handleToggleLabels = (e: React.MouseEvent<HTMLElement>) => {
+    e.preventDefault();
+    e.stopPropagation();  // Add this to prevent event bubbling
+    if (onToggleLabels) {
+      onToggleLabels(!showLabels);
+    }
+    setShowMenu(false);
+  };
+
   const handleSetShow = () => {
     setShowMenu(!showMenu);
   };
 
-  // If neither CSV nor PNG downloads are enabled, show nothing
   if (!enableDownloadAsCSV && !enableDownloadAsPNG) {
     return null;
   }
 
-  // If only CSV is enabled, skip the menu and show just the CSV download Icon
   if (enableDownloadAsCSV && !enableDownloadAsPNG) {
     return (
       <div className="absolute top-0 right-0 z-5 flex items-center justify-end space-x-2">
@@ -123,7 +130,6 @@ const DownloadMenu: React.FC<Props> = (props) => {
     );
   }
 
-  // If only PNG is enabled, skip the menu and show just the PNG download Icon
   if (!enableDownloadAsCSV && enableDownloadAsPNG) {
     return (
       <div className="absolute top-0 right-0 z-5 flex items-center justify-end space-x-2">
@@ -136,10 +142,9 @@ const DownloadMenu: React.FC<Props> = (props) => {
     );
   }
 
-  // Main Component
   return (
     <>
-      <div className="absolute top-0 right-0 z-5 flex items-center justify-end space-x-2 ">
+      <div className="absolute top-0 right-0 z-5 flex items-center justify-end space-x-2">
         <div onClick={handleSetShow} className="cursor-pointer relative w-3 flex justify-center">
           {!preppingDownload && (
             <IconVerticalEllipsis className="cursor-pointer hover:opacity-100 opacity-50" />
@@ -147,23 +152,44 @@ const DownloadMenu: React.FC<Props> = (props) => {
           {showMenu && (
             <>
               <div className="absolute bg-white flex items-center right-0 p-4 rounded shadow-md top-6 w-40 whitespace-nowrap">
-                <ul>
-                  <li className="mb-2">
+                <ul className="w-full space-y-2"> {/* Added space-y-2 for consistent spacing */}
+                  <li>
                     <a
                       href="#"
                       onClick={handleCSVClick}
-                      className="inline-block flex items-center hover:opacity-100 opacity-60"
+                      className="flex items-center gap-2 hover:opacity-100 opacity-60 w-full"
                     >
-                      <IconDownloadCSV className="cursor-pointer inline-block mr-2" /> Download CSV
+                      <IconDownloadCSV className="flex-shrink-0 w-4 h-4" /> {/* Fixed size */}
+                      <span>Download CSV</span>
                     </a>
                   </li>
                   <li>
                     <a
                       href="#"
                       onClick={handlePNGClick}
-                      className="inline-block flex items-center hover:opacity-100 opacity-60"
+                      className="flex items-center gap-2 hover:opacity-100 opacity-60 w-full"
                     >
-                      <IconDownloadPNG className="cursor-pointer inline-block mr-2" /> Download PNG
+                      <IconDownloadPNG className="flex-shrink-0 w-4 h-4" /> {/* Fixed size */}
+                      <span>Download PNG</span>
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="#"
+                      onMouseDown={handleToggleLabels}
+                      className="flex items-center gap-2 hover:opacity-100 opacity-60 w-full"
+                    >
+                      {showLabels ? (
+                        <>
+                          <IconEyeOff className="flex-shrink-0 w-4 h-4" /> {/* Fixed size */}
+                          <span>Hide Labels</span>
+                        </>
+                      ) : (
+                        <>
+                          <IconEye className="flex-shrink-0 w-4 h-4" /> {/* Fixed size */}
+                          <span>Show Labels</span>
+                        </>
+                      )}
                     </a>
                   </li>
                 </ul>

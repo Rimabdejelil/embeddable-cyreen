@@ -37,8 +37,16 @@ export const meta = {
       category: 'Chart data',
     },
     {
+      name: 'AbsolutePercentage',
+      type: 'boolean',
+      label: 'Absolute/Percentage',
+      description: 'Absolute/Percentage',
+      category: 'Configure chart',
+      defaultValue: false
+    },
+    {
       name: 'sortBy',
-      type: 'dimensionOrMeasure',
+      type: 'string',
       label: 'Sort by (optional)',
       config: {
         dataset: 'ds',
@@ -67,14 +75,14 @@ export const meta = {
       label: 'Show 2nd axis',
       category: 'Optional chart data',
       defaultValue: false,
-    },  
+    },
     {
       name: 'secondAxisTitle',
       type: 'string',
       label: '2nd axis title',
       description: 'The title for the chart',
       category: 'Optional chart data',
-    },  
+    },
     {
       name: 'title',
       type: 'string',
@@ -101,7 +109,7 @@ export const meta = {
       type: 'boolean',
       label: 'Show Labels',
       category: 'Chart settings',
-      defaultValue: false,
+      defaultValue: true,
     },
     {
       name: 'displayHorizontally',
@@ -137,6 +145,82 @@ export const meta = {
       category: 'Chart settings',
     },
     {
+      name: 'round',
+      type: 'boolean',
+      label: 'Round',
+      defaultValue: 'false',
+      category: 'Variables to configure',
+    },
+    {
+      name: 'xAxisPosition',
+      type: 'string',
+      label: 'X-Axis Position',
+      category: 'Chart settings',
+    },
+    {
+      name: 'TotalStores',
+      type: 'boolean',
+      label: 'Total Stores',
+      defaultValue: 'false',
+      category: 'Chart settings',
+    },
+    {
+      name: 'displayYaxis',
+      type: 'boolean',
+      label: 'display Y-axis',
+      defaultValue: 'true',
+      category: 'Chart settings',
+    },
+    {
+      name: 'displayXaxis',
+      type: 'boolean',
+      label: 'display X-axis',
+      defaultValue: 'true',
+      category: 'Chart settings',
+    },
+    {
+      name: 'impression',
+      type: 'boolean',
+      label: 'impression',
+      defaultValue: 'false',
+      category: 'Chart settings',
+    },
+    {
+      name: 'performance',
+      type: 'boolean',
+      label: 'performance',
+      defaultValue: 'false',
+      category: 'Chart settings',
+    },
+    {
+      name: 'Totalperformance',
+      type: 'boolean',
+      label: 'Total Performance',
+      defaultValue: 'false',
+      category: 'Chart settings',
+    },
+    {
+      name: 'optimization',
+      type: 'boolean',
+      label: 'Optimization',
+      defaultValue: 'false',
+      category: 'Chart settings',
+    },
+    {
+      name: 'KPIvalue',
+      type: 'string',
+      label: 'KPI value',
+      description: 'The kpi to display',
+      category: 'Configure chart',
+      array: true
+    },
+    {
+      name: 'PercentageSign',
+      type: 'boolean',
+      label: 'Show Percentage Sign',
+      category: 'Chart settings',
+    },
+    {
       name: 'dps',
       type: 'number',
       label: 'Decimal Places',
@@ -160,13 +244,13 @@ export const meta = {
 } as const satisfies EmbeddedComponentMeta;
 
 export default defineComponent(Component, meta, {
-  props: (inputs: Inputs<typeof meta>) => {
+  props: (inputs: Inputs<typeof meta>, _state, clientContext) => {
     const orderProp: OrderBy[] = [];
 
     if (inputs.sortBy) {
       orderProp.push({
-        property: inputs.sortBy,
-        direction: inputs.sortBy.nativeType == 'string' ? 'asc' : 'desc',
+        property: asMeasure(inputs.sortBy),
+        direction:'asc',
       });
     } else if (inputs.limit) {
       orderProp.push({
@@ -185,6 +269,11 @@ export default defineComponent(Component, meta, {
         orderBy: orderProp,
         limit: inputs.limit || 50,
       }),
+      clientContext
     };
   },
 });
+
+function asMeasure(valueMeasure: string | any): any {
+  return typeof valueMeasure === 'string' ? { name: valueMeasure, __type__: 'measure' } : valueMeasure;
+}

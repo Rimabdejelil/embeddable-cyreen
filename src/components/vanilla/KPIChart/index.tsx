@@ -19,22 +19,22 @@ export default ({ title, metrics, results }: Props) => {
 
     // Format first KPI as a number with commas (e.g., 168654 -> 168,654)
     const formattedFirstValue = firstValue && !isNaN(firstValue)
-        ? parseFloat(firstValue).toLocaleString()  // Adds commas for thousands
+        ? parseFloat(firstValue).toLocaleString("en-US")  // Adds commas for thousands
         : 'No data';
 
     return (
         <div style={{
             border: '1px solid #ccc',
-            padding: '10px',
+            padding: '15px',
             borderRadius: '8px',
-            boxShadow: '2px 2px 6px rgba(0,0,0,0.1)',
+            boxShadow: '0 0 10px rgba(0, 0, 0, 0.15)',
         }}>
             {/* Title */}
             {title && (
                 <h2 style={{
                     color: '#a53241', // Title color updated to Bordeaux Red
-                    fontSize: '18px',
-                    marginBottom: '5px'
+                    fontSize: '23px',
+                    fontFamily: 'Arial, sans-serif',
                 }}>
                     {title}
                 </h2>
@@ -61,7 +61,7 @@ export default ({ title, metrics, results }: Props) => {
                         bottom: '10px',
                         right: '10px'
                     }}>
-                        +{secondValue}
+                        {secondValue}
                     </div>
                 )}
             </div>
