@@ -1,0 +1,190 @@
+cubes:
+  - name: mon_heartbeat
+    title: Mon Heartbeat
+    sql_table: public.mon_heartbeat
+    data_source: my-db3
+
+    dimensions:
+      - name: id_mon_heartbeat
+        type: number
+        sql: id_mon_heartbeat
+        primary_key: true
+
+      - name: number_store_cyreen
+        type: string
+        sql: number_store_cyreen
+
+      - name: ip_address
+        type: string
+        sql: ip_address
+        title: IP Address
+
+      - name: timestamp
+        type: time
+        sql: timestamp
+      - name: error
+        type: string
+        sql: error
+
+      - name: store_name
+        type: string
+        sql: name
+        title: Store
+
+      - name: city
+        type: string
+        sql: city
+
+      - name: id_store
+        type: number
+        sql: id_store
+
+      - name: tree_path
+        type: string
+        sql: tree_path
+
+      - name: status
+        type: string
+        sql: |
+          CASE 
+            WHEN EXTRACT(HOUR FROM timestamp) IN (0,1,2,3,4,5,6,7,21,22,23) 
+              THEN 'Closed'
+            WHEN (EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - timestamp)) / 60) <= 430
+              THEN 'Online'
+            WHEN (EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - timestamp)) / 60) > 430
+                AND (EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - timestamp)) / 60) < 460
+              THEN 'Reconnecting'
+            ELSE 'Offline'
+          END
+        title: "Status"
+
+
+
+      
+
+      
+
+      
+
+    measures:
+      - name: max_timestamp
+        type: max
+        sql: timestamp
+        title: "Latest Timestamp"
+
+      - name: hour
+        sql: "EXTRACT(HOUR FROM {max_timestamp})"
+        type: number
+        title: "Hour"
+
+      
+
+
+
+      
+ 
+    pre_aggregations:
+      - name: mon_heartbeat_rollup
+        measures:
+          - CUBE.max_timestamp
+          - CUBE.hour
+        dimensions:
+          - CUBE.number_store_cyreen
+          - CUBE.ip_address
+          - CUBE.timestamp
+          - CUBE.status
+
+
+        indexes:
+          - name: number_store_cyreen_index
+            columns:
+              - CUBE.number_store_cyreen
+
+        refreshKey:
+          every: 15 minutes
+
+      - name: heartbeat_with_stores_rollup
+        type: rollup_join
+        measures:
+          - CUBE.max_timestamp
+          - CUBE.hour
+        dimensions:
+          - CUBE.ip_address
+          - CUBE.number_store_cyreen
+          - stores_mon.number_store_cyreen
+          - stores_mon.name
+          - CUBE.timestamp
+          - stores_mon.number_root
+          - stores_mon.tree_path
+          - stores_mon.id_store
+          - CUBE.status
+        rollups:
+          - CUBE.mon_heartbeat_rollup
+          - stores_mon.stores_mon_rollup
+
+    joins:
+      - name: stores_mon
+        sql: "{CUBE.number_store_cyreen} = {stores_mon.number_store_cyreen}"
+        relationship: many_to_one
+
+  - name: stores_mon
+    title: Stores Mon
+    sql: >
+     SELECT * 
+      FROM public.stores  
+      {% if COMPILE_CONTEXT.securityContext.number_root %}
+        WHERE CAST(SPLIT_PART(tree_path, '-', 2) AS INT) = '{ COMPILE_CONTEXT.securityContext.number_root }'
+      {% endif %}
+    data_source: my-db2
+
+    dimensions:
+      - name: id_store
+        sql: id_store
+        type: number
+
+      - name: id_company
+        sql: id_company
+        type: number
+
+      - name: name
+        sql: name
+        type: string
+
+      - name: tree_path
+        sql: tree_path
+        type: string
+
+      - name: number_store_cyreen
+        sql: number_store_cyreen
+        type: number
+
+      - name: number_root
+        sql: |
+          CAST(SPLIT_PART(tree_path, '-', 2) AS INT)
+        type: number
+ 
+    pre_aggregations:
+      - name: stores_mon_rollup
+        dimensions:
+          - CUBE.name
+          - CUBE.number_store_cyreen
+          - CUBE.number_root
+          - CUBE.tree_path
+          - CUBE.id_store
+
+
+        indexes:
+          - name: mon_heartbeat_index
+            columns:
+              - CUBE.number_store_cyreen
+
+        refreshKey:
+          every: 15 minutes
+
+
+      
+
+ 
+    
+ 
+  

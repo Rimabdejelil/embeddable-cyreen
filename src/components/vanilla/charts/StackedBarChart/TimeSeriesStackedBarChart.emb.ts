@@ -6,8 +6,7 @@ import Component from './index';
 export const meta = {
   name: 'TimeSeriesStackedBarChart',
   label: 'Grouped bar chart (time-series)',
-  category: 'Charts: time-series',
-  classNames: ['inside-card'],
+  category: 'Embeddable Components',
   inputs: [
     {
       name: 'ds',

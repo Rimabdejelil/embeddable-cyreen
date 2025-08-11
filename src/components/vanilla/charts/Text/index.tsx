@@ -17,6 +17,16 @@ import AllKPIsIcon from '../../../../assets/All KPIs.png';
 import Impressions from '../../../../assets/Round Impressions.png';
 import StoreComparison from '../../../../assets/Store Comparison.png';
 import ShopperDuration from '../../../../assets/ShopperDuration.png';
+import Network from '../../../../assets/Network.png';
+import weather from '../../../../assets/weather.png';
+import weathertypes from '../../../../assets/weathertypes.png';
+import DurationGroups from '../../../../assets/DurationGroups.png';
+import StoreTrolley from '../../../../assets/StoreTrolley.png';
+import CheckoutEvents from '../../../../assets/CheckoutEvents.png';
+import kpis from '../../../../assets/kpis.png';
+import matrix from '../../../../assets/matrix.png';
+import heatmapchart from '../../../../assets/heatmapchart.png';
+import timeintervals from '../../../../assets/TimeIntervals.png';
 
 const iconMap: { [key: string]: string } = {
   summary: SummaryIcon,
@@ -31,7 +41,17 @@ const iconMap: { [key: string]: string } = {
   allkpis: AllKPIsIcon,
   impressions: Impressions,
   storecomparison: StoreComparison,
-  shopperduration: ShopperDuration
+  shopperduration: ShopperDuration,
+  network: Network,
+  weather: weather,
+  weathertypes: weathertypes,
+  durationgroups: DurationGroups,
+  storetrolley: StoreTrolley,
+  checkoutevents: CheckoutEvents,
+  kpis: kpis,
+  matrix: matrix,
+  heatmapchart: heatmapchart,
+  timeintervals: timeintervals
 };
 
 type Props = {
@@ -44,6 +64,7 @@ type Props = {
   };
   icon?: string;
   granularity?: string;
+  weathertypes?: boolean
 };
 
 const AutoTranslateText = (props: Props) => {
@@ -54,7 +75,8 @@ const AutoTranslateText = (props: Props) => {
     bodyFontSize,
     clientContext,
     icon,
-    granularity
+    granularity,
+    weathertypes
   } = props;
 
   const [translatedTitle, setTranslatedTitle] = useState(title);
@@ -87,13 +109,15 @@ const AutoTranslateText = (props: Props) => {
   const granularityText = getGranularityText();
 
   const containerStyle = {
-    backgroundColor: '#62626e',
+    backgroundImage: weathertypes ? 'linear-gradient(135deg, #f2f2f2, #e6e6e6)' : 'none',
+    backgroundColor: weathertypes ? undefined : '#62626e',
     padding: '20px',
     borderRadius: '8px',
     display: 'flex',
     alignItems: 'center',
     height: '80px',
   };
+
 
   const titleStyle = {
     fontSize: titleFontSize ? `${titleFontSize}px` : 'inherit',
@@ -107,7 +131,7 @@ const AutoTranslateText = (props: Props) => {
     fontSize: bodyFontSize ? `${bodyFontSize}px` : 'inherit',
     lineHeight: bodyFontSize ? '1.2em' : 'inherit',
     fontWeight: 'bold',
-    color: 'white',
+    color: weathertypes ? 'black' : 'white',
     marginTop: '0',
   };
 

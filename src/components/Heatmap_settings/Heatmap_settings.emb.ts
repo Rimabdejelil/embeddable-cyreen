@@ -1,11 +1,12 @@
 import { EmbeddedComponentMeta, Inputs, defineComponent } from '@embeddable.com/react';
 import { Dataset, loadData } from '@embeddable.com/core';
-import HeatmapComponent from './index';
+import Component from './index';
 
 export const meta = {
     name: 'Heatmap_settings',
     label: 'Heatmap with settings',
     classNames: ['add-border'],
+    category: 'Cyreen Components',
     inputs: [
         {
             name: 'ds',
@@ -45,10 +46,67 @@ export const meta = {
             category: 'Configure chart',
             defaultValue: false,
         },
+        {
+            name: 'InstoreDurationUnimarc',
+            type: 'boolean',
+            label: 'Instore Duration Unimarc',
+            description: 'Instore Duration Unimarc',
+            category: 'Configure chart',
+        },
+        {
+            name: 'InstoreDurationEdeka',
+            type: 'boolean',
+            label: 'Instore Duration Edeka',
+            description: 'Instore Duration Edeka',
+            category: 'Configure chart',
+            defaultValue: 'false'
+        },
+        {
+            name: 'edeka',
+            type: 'boolean',
+            label: 'Edeka',
+            description: 'Edeka',
+            category: 'Configure chart',
+        },
+        {
+            name: 'Despar',
+            type: 'boolean',
+            label: 'Despar',
+            category: 'Chart settings',
+            defaultValue: false,
+        },
+        {
+            name: 'KPIvalue',
+            type: 'string',
+            label: 'KPI value',
+            description: 'KPI value',
+            category: 'Configure chart',
+        },
+        {
+            name: 'title',  // Updated to allow multiple values
+            type: 'string',
+            label: 'Title',  // Plural for multiple values
+            config: { dataset: 'ds' },
+            category: 'Configure chart'
+        },
+        {
+            name: 'enableDownloadAsCSV',
+            type: 'boolean',
+            label: 'Show download as CSV',
+            category: 'Export options',
+            defaultValue: true,
+        },
+        {
+            name: 'enableDownloadAsPNG',
+            type: 'boolean',
+            label: 'Show download as PNG',
+            category: 'Export options',
+            defaultValue: true,
+        }
     ]
 } as const satisfies EmbeddedComponentMeta;
 
-export default defineComponent(HeatmapComponent, meta, {
+export default defineComponent(Component, meta, {
     props: (inputs: Inputs<typeof meta>) => {
         return {
             ...inputs,

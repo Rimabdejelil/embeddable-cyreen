@@ -7,7 +7,8 @@ export const meta = {
   name: 'BarChart',
   label: 'Bar chart',
   classNames: ['inside-card'],
-  category: 'Charts: essentials',
+  category: 'Cyreen Components',
+  
   inputs: [
     {
       name: 'ds',
@@ -207,6 +208,27 @@ export const meta = {
       category: 'Chart settings',
     },
     {
+      name: 'overview',
+      type: 'boolean',
+      label: 'Overview',
+      defaultValue: 'false',
+      category: 'Chart settings',
+    },
+    {
+      name: 'TrolleyBar',
+      type: 'boolean',
+      label: 'Trolley Bar',
+      defaultValue: 'false',
+      category: 'Chart settings',
+    },
+    {
+      name: 'edeka',
+      type: 'boolean',
+      label: 'Edeka',
+      defaultValue: 'false',
+      category: 'Chart settings',
+    },
+    {
       name: 'KPIvalue',
       type: 'string',
       label: 'KPI value',
@@ -219,6 +241,13 @@ export const meta = {
       type: 'boolean',
       label: 'Show Percentage Sign',
       category: 'Chart settings',
+    },
+    {
+      name: 'Despar',
+      type: 'boolean',
+      label: 'Despar',
+      category: 'Chart settings',
+      defaultValue: false,
     },
     {
       name: 'dps',
@@ -250,7 +279,7 @@ export default defineComponent(Component, meta, {
     if (inputs.sortBy) {
       orderProp.push({
         property: asMeasure(inputs.sortBy),
-        direction:'asc',
+        direction: 'asc',
       });
     } else if (inputs.limit) {
       orderProp.push({

@@ -8,7 +8,7 @@ export const meta = {
   label: 'Download Button',
   defaultWidth: 200,
   defaultHeight: 100,
-  category: 'Download options',
+  category: 'Embeddable Components',
   inputs: [
     {
       name: 'ds',

@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { DataResponse, Dimension, Measure } from '@embeddable.com/core';
+import DownloadMenu from '../DownloadMenu';
 
 type Props = {
     title?: string;
@@ -8,22 +9,36 @@ type Props = {
     xAxis?: Dimension;
     KPIvalue?: string[];
     PercentageSign?: boolean;
+    enableDownloadAsCSV?: boolean;
+    enableDownloadAsPNG?: boolean;
+    Despar?: boolean;
 };
 
-export default ({ title, metrics, results, xAxis, KPIvalue, PercentageSign }: Props) => {
-    const { isLoading, data, error } = results;
+export default (props: Props) => {
+    const {
+        title, metrics, results, xAxis, KPIvalue, PercentageSign,
+        enableDownloadAsCSV,
+        enableDownloadAsPNG,
+        Despar
+    } = props;
+    const { data } = results;
     const [showTooltip, setShowTooltip] = useState(false);
     const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
     const [containerWidth, setContainerWidth] = useState(0);
+    const [isOverDownloadMenu, setIsOverDownloadMenu] = useState(false);
+    const chartRef = useRef<HTMLDivElement>(null);
+    const [preppingDownload, setPreppingDownload] = useState(false);
 
-    //const weekdayNames = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+    const formatNumber = (value: number, isPercentage = false): string => {
+        if (isNaN(value)) return 'N/A';
+        const formatted = Despar
+            ? value.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+            : value.toFixed(2);
+        return isPercentage ? `${formatted}%` : formatted;
+    };
 
     const firstResult = data?.[1];
-    let hourGroup = firstResult?.[xAxis?.name] || "No hour group available";
-
-    //if (xAxis?.name === "big_dm.weekday") {
-      //  hourGroup = weekdayNames[hourGroup - 1] || "Invalid day";
-//    }
+    let hourGroup = firstResult?.[xAxis?.name] || "No data available";
 
     let selectedMetrics: Measure[] = [];
 
@@ -38,51 +53,46 @@ export default ({ title, metrics, results, xAxis, KPIvalue, PercentageSign }: Pr
     }
 
     let highestKpiValue = -Infinity;
-    let highestKpiHourGroup = "No hour group available";
+    let highestKpiHourGroup = "No data available";
 
     selectedMetrics.forEach(metric => {
         data?.forEach(result => {
             const kpiValue = Number(result[metric.name]);
             if (kpiValue > highestKpiValue) {
                 highestKpiValue = kpiValue;
-                highestKpiHourGroup = result[xAxis?.name] || "No hour group available";
+                highestKpiHourGroup = result[xAxis?.name] || "No data available";
             }
         });
     });
 
-   // if (xAxis?.name === "big_dm.weekday") {
-      //  highestKpiHourGroup = weekdayNames[highestKpiHourGroup - 1] || "Invalid day";
-    //}
-
     let formattedKpiValue = "N/A";
-
     if (highestKpiValue !== -Infinity) {
         if (KPIvalue?.includes('Conversion Uplift')) {
-            formattedKpiValue = Math.round(highestKpiValue).toString();
+            formattedKpiValue = Despar
+                ? Math.round(highestKpiValue).toLocaleString("de-DE") + '%'
+                : Math.round(highestKpiValue).toString() + '%';
         } else {
-            formattedKpiValue = highestKpiValue.toFixed(2);
+            formattedKpiValue = formatNumber(highestKpiValue, true);
         }
-        formattedKpiValue += '%';
     }
 
-    let metricTitle = '';
-    if (KPIvalue?.includes('Conversion Rate')) {
-        metricTitle = 'Conversion With C.A.P.';
-    } else if (KPIvalue?.includes('Conversion Difference')) {
-        metricTitle = metrics?.[1]?.title || '';
-    } else if (KPIvalue?.includes('Sales Uplift')) {
-        metricTitle = metrics?.[2]?.title || '';
-    } else if (KPIvalue?.includes('Conversion Uplift')) {
-        metricTitle = metrics?.[3]?.title || '';
-    }
+    const handleMouseEnter = (e: React.MouseEvent) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const yPos = e.clientY - rect.top;
+        setShowTooltip(yPos > 20 && !isOverDownloadMenu);
+    };
+
+    const handleMouseMove = (e: React.MouseEvent) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const yPos = e.clientY - rect.top;
+        setMousePos({ x: e.clientX - rect.left, y: yPos });
+        setShowTooltip(yPos > 20 && !isOverDownloadMenu);
+    };
 
     const tooltipContentJSX = selectedMetrics.map((metric, idx) => {
         const sortedData = data
             ?.map(result => {
                 let xAxisValue = result[xAxis?.name] || 'N/A';
-               // if (xAxis?.name === "big_dm.weekday") {
-                 //   xAxisValue = weekdayNames[xAxisValue - 1] || "Invalid day";
-                //}
                 const metricValue = Number(result[metric.name]);
                 return { xAxisValue, metricValue };
             })
@@ -102,8 +112,10 @@ export default ({ title, metrics, results, xAxis, KPIvalue, PercentageSign }: Pr
                             <span style={{ marginRight: '15px' }}>{item.xAxisValue}</span>
                             <span>
                                 {KPIvalue?.includes('Conversion Uplift')
-                                    ? Math.round(item.metricValue)
-                                    : item.metricValue.toFixed(2)}%
+                                    ? (Despar
+                                        ? Math.round(item.metricValue).toLocaleString("de-DE")
+                                        : Math.round(item.metricValue).toString()) + '%'
+                                    : formatNumber(item.metricValue, true)}
                             </span>
                         </div>
                     ))}
@@ -120,29 +132,73 @@ export default ({ title, metrics, results, xAxis, KPIvalue, PercentageSign }: Pr
     });
 
     return (
-        <div style={{
-            border: '1px solid #ccc',
-            padding: '15px',
-            borderRadius: '8px',
-            boxShadow: '0 0 10px rgba(0, 0, 0, 0.15)',
-            position: 'relative',
-            height: '100%'
-        }}
-            onMouseEnter={() => setShowTooltip(true)}
-            onMouseLeave={() => setShowTooltip(false)}
-            onMouseMove={(e) => {
-                const rect = e.currentTarget.getBoundingClientRect();
-                setMousePos({
-                    x: e.clientX - rect.left,
-                    y: e.clientY - rect.top,
-                });
-            }}
+        <div
             ref={(el) => {
+                chartRef.current = el;
                 if (el) {
                     const { width } = el.getBoundingClientRect();
                     setContainerWidth(width);
                 }
-            }}>
+            }}
+            style={{
+                border: '1px solid #ccc',
+                padding: '15px',
+                borderRadius: '8px',
+                boxShadow: '0 0 10px rgba(0, 0, 0, 0.15)',
+                position: 'relative',
+                height: '100%',
+                backgroundColor: title === 'Smart Stores' ? '#AF3241' : 'white'
+            }}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={() => !isOverDownloadMenu && setShowTooltip(false)}
+            onMouseMove={handleMouseMove}
+        >
+            {(enableDownloadAsCSV || enableDownloadAsPNG) && (
+                <div
+                    style={{
+                        position: 'absolute',
+                        top: '15px',
+                        right: '15px',
+                        fontSize: '14px',
+                        zIndex: 1000,
+                        backgroundColor: 'transparent',
+                        padding: 0,
+                        margin: 0,
+                        border: 'none',
+                        outline: 'none'
+                    }}
+                    onMouseEnter={() => setIsOverDownloadMenu(true)}
+                    onMouseLeave={() => {
+                        setIsOverDownloadMenu(false);
+                        if (!preppingDownload) setShowTooltip(true);
+                    }}
+                >
+                    <DownloadMenu
+                        csvOpts={{
+                            chartName: props.title || 'chart',
+                            props: { ...props, results },
+                        }}
+                        enableDownloadAsCSV={enableDownloadAsCSV}
+                        enableDownloadAsPNG={enableDownloadAsPNG}
+                        pngOpts={{ chartName: props.title || 'chart', element: chartRef.current }}
+                        preppingDownload={preppingDownload}
+                        setPreppingDownload={(prepping) => {
+                            setPreppingDownload(prepping);
+                            if (!prepping) {
+                                setIsOverDownloadMenu(false);
+                                setShowTooltip(true);
+                            }
+                        }}
+                        style={{
+                            backgroundColor: 'transparent',
+                            border: 'none',
+                            padding: 0,
+                            margin: 0
+                        }}
+                    />
+                </div>
+            )}
+
             <h2 style={{
                 color: '#a53241',
                 fontSize: '23px',
@@ -181,7 +237,7 @@ export default ({ title, metrics, results, xAxis, KPIvalue, PercentageSign }: Pr
                 {showTooltip && (
                     <div style={{
                         position: 'absolute',
-                        top: `${mousePos.y - 30}px`,
+                        top: `${mousePos.y - 60}px`,
                         left: `${Math.min(mousePos.x - 30, containerWidth - 170)}px`,
                         backgroundColor: '#fff',
                         boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',

@@ -1,8 +1,10 @@
 import { DataResponse, Dimension, Granularity, Measure } from '@embeddable.com/core';
 
 import useTimeseries from '../../../hooks/useTimeseries';
+import { useState, useEffect } from 'react';
 import Container from '../../Container';
 import BarChart from './components/BarChart';
+import { BlocklistConfig } from 'tailwindcss/types/config';
 
 type Props = {
   description?: string;
@@ -26,21 +28,25 @@ type Props = {
   yAxisTitle?: string;
   showSecondYAxis?: boolean;
   secondAxisTitle?: string;
+  Overview?: boolean
 };
 
 export default (props: Props) => {
   //add missing dates to time-series barcharts
   const { fillGaps } = useTimeseries(props, 'desc');
   const { results, isTSBarChart } = props;
+  const [showLabels, setShowLabels] = useState(props.showLabels || false);
   const updatedProps = {
     ...props,
+    showLabels,
+    onToggleLabels: setShowLabels,
     results: isTSBarChart
       ? { ...props.results, data: results?.data?.reduce(fillGaps, []) }
       : props.results,
   };
 
   return (
-    <Container {...props} className="overflow-y-hidden">
+    <Container {...updatedProps} className="overflow-y-hidden">
       <BarChart {...updatedProps} />
     </Container>
   );

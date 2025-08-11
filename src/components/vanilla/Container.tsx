@@ -31,6 +31,7 @@ export type ContainerProps = {
   KPIvalue?: string[];
   xAxis?: Dimension;
   showLabels?: boolean;
+  Overview?: boolean;
   onToggleLabels?: (show: boolean) => void;
 };
 
@@ -99,7 +100,7 @@ export default ({
   return (
     <div className="h-full relative font-embeddable text-sm flex flex-col">
       {props.enableDownloadAsCSV || props.enableDownloadAsPNG ? (
-        <div className={`${!props.translatedTitle ? 'h-[32px] w-full' : ''}`}>
+        <div className={`${!props.title ? 'h-[32px] w-full' : ''}`}>
           {/* spacer to keep charts from overlaying download menu if no title*/}
         </div>
       ) : null}
@@ -121,23 +122,50 @@ export default ({
           />
         ) : displayGranularity ? (
           <Title title={props.translatedTitle + ` ${displayGranularity}`} />
-        ) : props.xAxis === "receipts_retail.hour" ? (
+        ) : (props.xAxis === "receipts_retail.hour" || props.xAxis === "customer_journeys.hour") ? (
           <Title title='Hourly' />
 
-        ) : props.xAxis === "receipts_retail.date" ? (
+        ) : (props.xAxis === "receipts_retail.date" || props.xAxis === "customer_journeys.date") ? (
           <Title title='Daily' />
 
-        ) : props.xAxis === "receipts_retail.dow" ? (
+        ) : (props.xAxis === "receipts_retail.dow" || props.xAxis === "customer_journeys.dow") ? (
           <Title title='Weekday' />
-          
-        ) : props.xAxis === "receipts_retail.month" ? (
+
+        ) : (props.xAxis === "receipts_retail.month" || props.xAxis === "customer_journeys.month1") ? (
           <Title title='Monthly' />
         )
-          : (
-            <Title title={props.translatedTitle} />
-          )}
+          : (props.xAxis === "overview.hour") ? (
+
+            <Title title={'Hourly' + props.title} />
+          )
+            : (props.xAxis === "overview.date") ? (
+
+              <Title title={'Daily' + props.title} />
+            )
+              : (props.xAxis === "overview.dow") ? (
+
+                <Title title={'Weekday' + props.title} />
+              )
+
+                : (props.xAxis === "overview.month1") ? (
+
+                  <Title title={'Monthly' + props.title} />
+                )
+
+                  :
+
+                  (props.title === "Smart Stores") ? (
+                    <Title title={props.title}
+                      color='white' />
+                  )
+                    :
+                    (
+                      <Title title={props.title} />
+                    )}
 
         <Description description={props.description} />
+
+
 
         <div ref={refResize} className={twMerge(`relative grow flex flex-col`, className || '')}>
           <div

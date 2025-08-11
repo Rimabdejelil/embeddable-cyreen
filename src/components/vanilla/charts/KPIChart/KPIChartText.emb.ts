@@ -11,7 +11,7 @@ export const meta = {
   defaultWidth: 300,
   defaultHeight: 150,
   classNames: ['inside-card'],
-  category: 'Charts: essentials',
+  category: 'Embeddable Components',
   inputs: [
     {
       name: 'ds',

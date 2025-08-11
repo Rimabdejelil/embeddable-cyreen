@@ -12,7 +12,8 @@ import {
 export const meta = {
   name: 'TextKPI',
   label: 'Text Dimension Measure',
-  category: 'Text',
+
+  category: 'Cyreen Components',
   inputs: [
     {
       name: 'ds',

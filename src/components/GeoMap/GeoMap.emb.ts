@@ -1,11 +1,13 @@
 import { EmbeddedComponentMeta, Inputs, defineComponent } from '@embeddable.com/react';
 import { Dataset, Dimension, Measure, loadData } from '@embeddable.com/core';
-import GeoMap from './index';
+import Component from './index';
 
 export const meta = {
     name: 'GeoMap',
     label: 'Geo Scatter Chart',
-    classNames: ['add-border'],
+    classNames: ['inside-card-map'],
+    category: 'Cyreen Components',
+
     inputs: [
         {
             name: 'ds',
@@ -41,11 +43,46 @@ export const meta = {
             label: 'Value Metric 2',  // Plural for multiple values
             config: { dataset: 'ds' },
             category: 'Configure chart'
-        }
+        },
+        {
+            name: 'title',  // Updated to allow multiple values
+            type: 'string',
+            label: 'Title',  // Plural for multiple values
+            config: { dataset: 'ds' },
+            category: 'Configure chart'
+        },
+        {
+            name: 'showLabels',
+            type: 'boolean',
+            label: 'Show Labels',
+            category: 'Chart settings',
+            defaultValue: true,
+        },
+        {
+            name: 'Despar',
+            type: 'boolean',
+            label: 'Despar',
+            category: 'Chart settings',
+            defaultValue: false,
+        },
+        {
+            name: 'enableDownloadAsCSV',
+            type: 'boolean',
+            label: 'Show download as CSV',
+            category: 'Export options',
+            defaultValue: true,
+        },
+        {
+            name: 'enableDownloadAsPNG',
+            type: 'boolean',
+            label: 'Show download as PNG',
+            category: 'Export options',
+            defaultValue: true,
+        },
     ]
 } as const satisfies EmbeddedComponentMeta;
 
-export default defineComponent(GeoMap, meta, {
+export default defineComponent(Component, meta, {
     props: (inputs: Inputs<typeof meta>) => {
         return {
             ...inputs,

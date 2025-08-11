@@ -1,7 +1,8 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import Title from '../Title';
 import { Measure, DataResponse } from '@embeddable.com/core';
 import { translateText } from '../translateText';
+import DownloadMenu from '../DownloadMenu';
 
 type Props = {
   title?: string;
@@ -14,6 +15,8 @@ type Props = {
   clientContext?: {
     language?: string;
   };
+  enableDownloadAsCSV?: boolean;
+  enableDownloadAsPNG?: boolean
 };
 
 export default (props: Props) => {
@@ -26,6 +29,8 @@ export default (props: Props) => {
     KPIvalue,
     AbsolutePercentage,
     clientContext,
+    enableDownloadAsCSV,
+    enableDownloadAsPNG
   } = props;
 
   const { isLoading, data, error } = results;
@@ -33,6 +38,10 @@ export default (props: Props) => {
 
   const [translatedTitle, setTranslatedTitle] = useState(title || '');
   const [translatedMetricTitles, setTranslatedMetricTitles] = useState<string[]>([]);
+  const [isOverDownloadMenu, setIsOverDownloadMenu] = useState(false);
+
+  const chartRef = useRef<HTMLDivElement>(null);
+  const [preppingDownload, setPreppingDownload] = useState(false);
 
   const row = data?.[0];
 
@@ -51,7 +60,6 @@ export default (props: Props) => {
     fontFamily: 'Arial, sans-serif',
   };
 
-  // 🧠 Memoize displayedMetrics so we can use it inside useEffect
   const displayedMetrics: Measure[] = useMemo(() => {
     if (!metrics || !Array.isArray(metrics)) return [];
 
@@ -89,13 +97,57 @@ export default (props: Props) => {
   if (!data || !Array.isArray(data) || data.length === 0) return <div>No data available</div>;
 
   return (
-    <div style={{
-      border: '1px solid #ccc',
-      padding: '15px',
-      borderRadius: '8px',
-      boxShadow: '0 0 10px rgba(0, 0, 0, 0.15)',
-      height: '100%'
-    }}>
+    <div
+      ref={chartRef}
+      style={{
+        border: '1px solid #ccc',
+        padding: '15px',
+        borderRadius: '8px',
+        boxShadow: '0 0 10px rgba(0, 0, 0, 0.15)',
+        height: '100%',
+        position: 'relative'
+      }}>
+      {/* Download Menu - with mouse event handlers */}
+      {(enableDownloadAsCSV || enableDownloadAsPNG) && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '15px',
+            right: '15px',
+            fontSize: '14px',
+            zIndex: 1000,
+            backgroundColor: 'transparent',
+            padding: 0,
+            margin: 0,
+            border: 'none',
+            outline: 'none'
+          }}
+          onMouseEnter={() => setIsOverDownloadMenu(true)}
+          onMouseLeave={() => setIsOverDownloadMenu(false)}
+        >
+          <DownloadMenu
+            csvOpts={{
+              chartName: props.title || 'chart',
+              props: {
+                ...props,
+                results: results,
+              },
+            }}
+            enableDownloadAsCSV={enableDownloadAsCSV}
+            enableDownloadAsPNG={enableDownloadAsPNG}
+            pngOpts={{ chartName: props.title || 'chart', element: chartRef.current }}
+            preppingDownload={preppingDownload}
+            setPreppingDownload={setPreppingDownload}
+            style={{
+              backgroundColor: 'transparent',
+              border: 'none',
+              padding: 0,
+              margin: 0
+            }}
+          />
+        </div>
+      )}
+
       {translatedTitle && <Title title={translatedTitle} style={titleStyle} />}
 
       {displayedMetrics.length > 0 ? (
@@ -108,7 +160,6 @@ export default (props: Props) => {
             const formattedNumber = Number(originalValue).toLocaleString("en-US");
             displayValue = KPIvalue?.includes('Sales in CLP$') ? `$${formattedNumber}` : formattedNumber;
           }
-
 
           if (AbsolutePercentage && arr.length === 3) {
             const referenceValue = row?.[arr[2].name];
@@ -124,7 +175,6 @@ export default (props: Props) => {
                   : `${Math.round((originalValue / referenceValue) * 100).toLocaleString("en-US")}%`;
             }
           }
-
 
           const translatedMetricTitle = translatedMetricTitles[index] || m.title;
 

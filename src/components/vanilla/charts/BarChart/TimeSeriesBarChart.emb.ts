@@ -7,7 +7,7 @@ export const meta = {
   name: 'TimeSeriesBarChart',
   label: 'Bar chart (time-series)',
   classNames: ['inside-card'],
-  category: 'Charts: time-series',
+  category: 'Cyreen Components',
   inputs: [
     {
       name: 'ds',
@@ -184,12 +184,41 @@ export const meta = {
       category: 'Chart settings',
     },
     {
+      name: 'Despar',
+      type: 'boolean',
+      label: 'Despar',
+      category: 'Chart settings',
+      defaultValue: false,
+    },
+
+    {
       name: 'KPIvalue',
       type: 'string',
       label: 'KPI value',
       description: 'The kpi to display',
       category: 'Configure chart',
       array: true
+    },
+    {
+      name: 'edeka_hourgroup',
+      type: 'boolean',
+      label: 'Edeka Hour Group',
+      defaultValue: 'false',
+      category: 'Chart settings',
+    },
+    {
+      name: 'master',
+      type: 'boolean',
+      label: 'Master',
+      defaultValue: 'false',
+      category: 'Chart settings',
+    },
+    {
+      name: 'masterUplift',
+      type: 'boolean',
+      label: 'Master Uplift',
+      defaultValue: 'false',
+      category: 'Chart settings',
     },
     {
       name: 'PercentageSign',

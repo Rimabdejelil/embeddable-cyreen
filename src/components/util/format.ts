@@ -1,5 +1,4 @@
 import { format as formatDate } from 'date-fns';
-
 import { parseTime } from '../util/timezone';
 
 type Type = 'number' | 'date' | 'string';
@@ -12,25 +11,44 @@ type Options = {
   dps?: number;
 };
 
-function numberFormatter(dps: number | undefined | null) {
-  const fallback = dps == null || dps < 0;
-  return new Intl.NumberFormat('en-US', {
-    minimumFractionDigits: fallback ? 0 : dps,
-    maximumFractionDigits: fallback ? 2 : dps,
-    useGrouping: true, // ensures thousands separators
-  });
-}
-
-
 const dateFormatter = new Intl.DateTimeFormat();
 
-export default function formatValue(str: string = '', opt: Type | Options = 'string') {
+function numberFormatter(value: number, dps: number | undefined | null, Despar: boolean) {
+  const fallback = dps == null || dps < 0;
+
+  // Choose locale based on Despar flag
+  const locale = Despar ? 'de-DE' : 'en-US';
+  console.log(Despar)
+
+  if (!fallback && dps === 0) {
+
+    // For values 0.5 or greater, round to integer
+    return new Intl.NumberFormat(locale, {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+      useGrouping: true,
+    }).format(value);
+
+  }
+
+  // Default behavior
+  return new Intl.NumberFormat(locale, {
+    minimumFractionDigits: fallback ? 0 : dps,
+    maximumFractionDigits: fallback ? 2 : dps,
+    useGrouping: true,
+  }).format(value);
+}
+
+export default function formatValue(str: string = '', opt: Type | Options = 'string', Despar: boolean) {
   if (str === null) return null;
 
   const { type, dateFormat, meta, truncate, dps }: Options =
     typeof opt === 'string' ? { type: opt } : opt;
 
-  if (type === 'number') return wrap(numberFormatter(dps).format(parseFloat(str)));
+  if (type === 'number') {
+    const value = parseFloat(str);
+    return wrap(numberFormatter(value, dps, Despar));
+  }
 
   if (type === 'date' && str.endsWith('T00:00:00.000')) {
     return wrap(dateFormatter.format(new Date(str)));

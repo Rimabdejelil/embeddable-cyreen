@@ -4,13 +4,12 @@ import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
 import IconDownloadCSV from '../icons/DownloadCSV';
 import IconDownloadPNG from '../icons/DownloadPNG';
 import IconVerticalEllipsis from '../icons/VerticalEllipsis';
+import IconHorizontalEllipsis from '../icons/HorizontalEllipsis';
 import downloadAsCSV from '../util/downloadAsCSV';
 import IconEye from '../icons/Eye';
-import IcoEyeOff from '../icons/EyeOff';
-
+import IconEyeOff from '../icons/EyeOff';
 import downloadAsPNG from '../util/downloadAsPNG';
 import { ContainerProps } from './Container';
-import IconEyeOff from '../icons/EyeOff';
 
 interface CSVProps extends ContainerProps {
   results?: DataResponse | DataResponse[];
@@ -18,6 +17,7 @@ interface CSVProps extends ContainerProps {
 }
 
 type Props = {
+  title?: string;
   csvOpts?: {
     chartName: string;
     props: CSVProps;
@@ -32,6 +32,7 @@ type Props = {
   setPreppingDownload: Dispatch<SetStateAction<boolean>>;
   showLabels?: boolean;
   onToggleLabels?: (show: boolean) => void;
+  Table?: boolean; // <-- New prop
 };
 
 const DownloadMenu: React.FC<Props> = (props) => {
@@ -43,8 +44,11 @@ const DownloadMenu: React.FC<Props> = (props) => {
     preppingDownload,
     setPreppingDownload,
     showLabels,
-    onToggleLabels
+    onToggleLabels,
+    title,
+    Table,
   } = props;
+
   const [showMenu, setShowMenu] = useState<boolean>(false);
   const [isDownloadStarted, setIsDownloadStarted] = useState<boolean>(false);
   const refFocus = useRef<HTMLInputElement>(null);
@@ -59,34 +63,150 @@ const DownloadMenu: React.FC<Props> = (props) => {
       if (element) {
         const cleanedChartName = chartName.replace(/([^a-zA-Z0-9 ]+)/gi, '-');
         const timestamp = new Date().toISOString();
+        const today = new Date();
+        const formattedDate = today.toISOString().split('T')[0]; // '2025-07-31'
         setTimeout(() => {
-          downloadAsPNG(element, `${cleanedChartName}-${timestamp}.png`, setPreppingDownload);
+          downloadAsPNG(element, `Cyreen-CAP-Explorer-${cleanedChartName}-${formattedDate}.png`, setPreppingDownload);
         }, 200);
       }
       setIsDownloadStarted(false);
     }
   }, [isDownloadStarted, pngOpts, preppingDownload, setPreppingDownload]);
 
+  const beautifyHeader = (key: string): string => {
+    const field = key.includes('.') ? key.split('.').pop()! : key;
+    return field
+      .split('_')
+      .map((word) => (word.length > 2 ? word.charAt(0).toUpperCase() + word.slice(1) : word.toUpperCase()))
+      .join(' ');
+  };
+
+  const roundAndRenameKeys = (obj: any) => {
+    const transformed: Record<string, any> = {};
+    for (const key in obj) {
+      let value = obj[key];
+      const lowerKey = key.toLowerCase();
+
+      if (value !== null && value !== '' && !isNaN(value)) {
+        const num = typeof value === 'number' ? value : parseFloat(value);
+
+        if (lowerKey.includes('impression')) {
+          value = Math.round(num); // round to 0 decimals
+        } else {
+          value = Number.isInteger(num) ? num : num.toFixed(2); // default formatting
+        }
+      }
+
+      transformed[beautifyHeader(key)] = value;
+    }
+    return transformed;
+  };
+
+  // Utility: Clean column titles based on your rules
+  const cleanColumnTitle = (title: string): string => {
+    let newTitle = title;
+    // Remove unwanted words but keep the column
+    newTitle = newTitle.replace(/round/gi, '');
+    newTitle = newTitle.replace(/despar/gi, '');
+    newTitle = newTitle.replace(/original/gi, '');
+    newTitle = newTitle.replace(/only/gi, '');
+    newTitle = newTitle.replace(/no negative/gi, '');
+    newTitle = newTitle.replace(/bool/gi, '');
+    newTitle = newTitle.replace(/euros/gi, '');
+    newTitle = newTitle.replace(/base/gi, '');
+    newTitle = newTitle.replace(/absolute not minus/gi, '');
+    newTitle = newTitle.replace(/absolute max limit/gi, '');
+    newTitle = newTitle.replace(/quote used percent/gi, 'Used Ratio');
+    newTitle = newTitle.replace(/quote unused percent/gi, 'Unused Ratio');
+    newTitle = newTitle.replace(/impression unfiltered calculation/gi, 'Impressions');
+    newTitle = newTitle.replace(/total impressions/gi, 'Impressions');
+    newTitle = newTitle.replace(/content name/gi, 'Visual');
+    newTitle = newTitle.replace(/name campaign measure/gi, 'Name Campaign');
+    newTitle = newTitle.replace(/date min/gi, 'Start Date');
+    newTitle = newTitle.replace(/date max/gi, 'End Date');
+    newTitle = newTitle.replace(/Dow/gi, 'Weekday');
+    newTitle = newTitle.replace(/temp/gi, 'Temperature');
+    newTitle = newTitle.replace(/percentage ed/gi, '(in %)');
+    newTitle = newTitle.replace(/\d+/g, ''); // remove numbers
+    return beautifyHeader(newTitle.trim().replace(/_+/g, ' '));
+  };
+
+  // Utility: Filter & clean CSV data
+  const cleanCSVData = (data: any[]) => {
+    if (!data || data.length === 0) return data;
+
+    // Step 1: Remove columns containing 'agg' or 'sort'
+    let keys = Object.keys(data[0]).filter(
+      (key) => !/agg|sort|tftf/i.test(key)
+    );
+
+    // Step 2: Remove columns where all values are null/empty
+    keys = keys.filter((key) => {
+      return data.some((row) => row[key] !== null && row[key] !== '');
+    });
+
+    // Step 2: Keep but clean titles containing 'round', numbers, 'despar'
+    const cleanedKeys = keys.map((key) => cleanColumnTitle(key));
+
+    // Step 3: Remove duplicates (columns with same values)
+    const uniqueKeys: string[] = [];
+    const seenData: string[] = [];
+
+    cleanedKeys.forEach((col, idx) => {
+      const colData = JSON.stringify(data.map((row) => row[keys[idx]]));
+      if (!seenData.includes(colData)) {
+        seenData.push(colData);
+        uniqueKeys.push(keys[idx]);
+      }
+    });
+
+    // Build cleaned data array
+    return data.map((row) => {
+      const newRow: Record<string, any> = {};
+      uniqueKeys.forEach((origKey) => {
+        newRow[cleanColumnTitle(origKey)] = row[origKey];
+      });
+      return newRow;
+    });
+  };
+
+
+
+
   const handleCSVClick = (e: React.MouseEvent<HTMLElement>) => {
     e.preventDefault();
+    e.stopPropagation();
     if (!csvOpts) {
       console.error('No CSV options supplied');
       return;
     }
+
     const { chartName, props: csvProps } = csvOpts;
     let data: DataResponse['data'] = [];
+
     if (Array.isArray(csvProps.results)) {
       data = csvProps.results.reduce((acc: DataResponse['data'] = [], result) => {
         if (result?.data) {
-          acc.push(...result.data);
+          acc.push(...result.data.map(roundAndRenameKeys));
         }
         return acc;
       }, []);
     } else {
-      data = csvProps.results?.data;
+      data = csvProps.results?.data?.map(roundAndRenameKeys) || [];
     }
-    downloadAsCSV(csvProps, data, csvProps.prevResults?.data, chartName, setPreppingDownload);
+
+    // ✅ Clean CSV before download
+    const cleanedData = cleanCSVData(data);
+
+    const cleanedChartName = chartName.replace(/([^a-zA-Z0-9 ]+)/gi, '-');
+    const today = new Date();
+    const formattedDate = today.toISOString().split('T')[0];
+    const filename = `Cyreen-CAP-Explorer-${cleanedChartName}-${formattedDate}`;
+
+    downloadAsCSV(csvProps, cleanedData, csvProps.prevResults?.data, filename, setPreppingDownload);
   };
+
+
 
   useEffect(() => {
     if (showMenu) {
@@ -96,6 +216,7 @@ const DownloadMenu: React.FC<Props> = (props) => {
 
   const handlePNGClick = (e: React.MouseEvent<HTMLElement>) => {
     e.preventDefault();
+    e.stopPropagation();
     setShowMenu(false);
     setPreppingDownload(true);
     setIsDownloadStarted(true);
@@ -103,7 +224,7 @@ const DownloadMenu: React.FC<Props> = (props) => {
 
   const handleToggleLabels = (e: React.MouseEvent<HTMLElement>) => {
     e.preventDefault();
-    e.stopPropagation();  // Add this to prevent event bubbling
+    e.stopPropagation();
     if (onToggleLabels) {
       onToggleLabels(!showLabels);
     }
@@ -114,14 +235,12 @@ const DownloadMenu: React.FC<Props> = (props) => {
     setShowMenu(!showMenu);
   };
 
-  if (!enableDownloadAsCSV && !enableDownloadAsPNG) {
-    return null;
-  }
+  if (!enableDownloadAsCSV && !enableDownloadAsPNG) return null;
 
   if (enableDownloadAsCSV && !enableDownloadAsPNG) {
     return (
       <div className="absolute top-0 right-0 z-5 flex items-center justify-end space-x-2">
-        <div onClick={handleCSVClick} className="cursor-pointer">
+        <div onMouseDown={handleCSVClick} className="cursor-pointer">
           {!preppingDownload && (
             <IconDownloadCSV className="cursor-pointer hover:opacity-100 opacity-50" />
           )}
@@ -133,7 +252,7 @@ const DownloadMenu: React.FC<Props> = (props) => {
   if (!enableDownloadAsCSV && enableDownloadAsPNG) {
     return (
       <div className="absolute top-0 right-0 z-5 flex items-center justify-end space-x-2">
-        <div onClick={handlePNGClick} className="cursor-pointer">
+        <div onMouseDown={handlePNGClick} className="cursor-pointer">
           {!preppingDownload && (
             <IconDownloadPNG className="cursor-pointer hover:opacity-100 opacity-50" />
           )}
@@ -145,53 +264,63 @@ const DownloadMenu: React.FC<Props> = (props) => {
   return (
     <>
       <div className="absolute top-0 right-0 z-5 flex items-center justify-end space-x-2">
-        <div onClick={handleSetShow} className="cursor-pointer relative w-3 flex justify-center">
+        <div onClick={handleSetShow} className="cursor-pointer relative w-4 h-4 flex justify-center">
           {!preppingDownload && (
-            <IconVerticalEllipsis className="cursor-pointer hover:opacity-100 opacity-50" />
+            Table ? (
+              <IconHorizontalEllipsis className="text-white cursor-pointer hover:opacity-100 opacity-50 w-full h-full" />
+            ) : (
+              <IconVerticalEllipsis
+                className={`cursor-pointer hover:opacity-100 opacity-50 w-full h-full ${title === 'Smart Stores' || title === 'Highest Average'
+                  ? 'text-white'
+                  : 'text-[#474752]'
+                  }`}
+              />
+            )
           )}
           {showMenu && (
             <>
               <div className="absolute bg-white flex items-center right-0 p-4 rounded shadow-md top-6 w-40 whitespace-nowrap">
-                <ul className="w-full space-y-2"> {/* Added space-y-2 for consistent spacing */}
+                <ul className="w-full space-y-2">
                   <li>
                     <a
-                      href="#"
-                      onClick={handleCSVClick}
+                      onMouseDown={handleCSVClick}
                       className="flex items-center gap-2 hover:opacity-100 opacity-60 w-full"
                     >
-                      <IconDownloadCSV className="flex-shrink-0 w-4 h-4" /> {/* Fixed size */}
+                      <IconDownloadCSV className="flex-shrink-0 w-4 h-4" />
                       <span>Download CSV</span>
                     </a>
                   </li>
                   <li>
                     <a
                       href="#"
-                      onClick={handlePNGClick}
+                      onMouseDown={handlePNGClick}
                       className="flex items-center gap-2 hover:opacity-100 opacity-60 w-full"
                     >
-                      <IconDownloadPNG className="flex-shrink-0 w-4 h-4" /> {/* Fixed size */}
+                      <IconDownloadPNG className="flex-shrink-0 w-4 h-4" />
                       <span>Download PNG</span>
                     </a>
                   </li>
-                  <li>
-                    <a
-                      href="#"
-                      onMouseDown={handleToggleLabels}
-                      className="flex items-center gap-2 hover:opacity-100 opacity-60 w-full"
-                    >
-                      {showLabels ? (
-                        <>
-                          <IconEyeOff className="flex-shrink-0 w-4 h-4" /> {/* Fixed size */}
-                          <span>Hide Labels</span>
-                        </>
-                      ) : (
-                        <>
-                          <IconEye className="flex-shrink-0 w-4 h-4" /> {/* Fixed size */}
-                          <span>Show Labels</span>
-                        </>
-                      )}
-                    </a>
-                  </li>
+                  {showLabels !== undefined && onToggleLabels && (
+                    <li>
+                      <a
+                        href="#"
+                        onMouseDown={handleToggleLabels}
+                        className="flex items-center gap-2 hover:opacity-100 opacity-60 w-full"
+                      >
+                        {showLabels ? (
+                          <>
+                            <IconEyeOff className="flex-shrink-0 w-4 h-4" />
+                            <span>Hide Labels</span>
+                          </>
+                        ) : (
+                          <>
+                            <IconEye className="flex-shrink-0 w-4 h-4" />
+                            <span>Show Labels</span>
+                          </>
+                        )}
+                      </a>
+                    </li>
+                  )}
                 </ul>
               </div>
               <input

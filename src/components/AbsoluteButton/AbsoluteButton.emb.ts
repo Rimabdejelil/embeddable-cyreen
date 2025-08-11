@@ -6,9 +6,9 @@ import Component from './index';
 export const meta = {
     name: 'AbsoluteButton',
     label: 'Absolute Button',
+    category: 'Cyreen Components',
     defaultWidth: 400,
     defaultHeight: 80,
-    category: 'Controls: inputs & dropdowns',
     inputs: [
         {
             name: 'title',

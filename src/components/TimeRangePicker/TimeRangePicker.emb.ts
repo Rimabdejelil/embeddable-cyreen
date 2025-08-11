@@ -5,6 +5,7 @@ import TimeRangePickerComponent from './index';
 export const meta: EmbeddedComponentMeta = {
     name: 'TimeRangePicker',
     label: 'Time Range Picker',
+    category: 'Cyreen Components',
     inputs: [
         {
             name: 'defaultTimeRange',

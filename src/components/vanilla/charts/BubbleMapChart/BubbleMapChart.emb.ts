@@ -7,7 +7,7 @@ export const meta = {
   name: 'BubbleMapChart',
   label: 'Bubble map chart',
   classNames: ['inside-card'],
-  category: 'Charts: essentials',
+  category: 'Embeddable Components',
   inputs: [
     {
       name: 'ds',

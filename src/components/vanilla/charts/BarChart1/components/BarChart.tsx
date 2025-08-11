@@ -1,4 +1,4 @@
-import { DataResponse, Dimension, Granularity, Measure } from '@embeddable.com/core';
+import { DataResponse, Dimension, DimensionOrMeasure, Granularity, Measure } from '@embeddable.com/core';
 import {
     BarElement,
     CategoryScale,
@@ -25,6 +25,7 @@ import {
 } from '../../../../constants';
 import formatValue from '../../../../util/format';
 import getBarChartOptions from '../../../../util/getBarChartOptions';
+import { filter } from 'd3';
 
 const drawYearLabelsPlugin = {
     id: 'drawYearLabelsPlugin',
@@ -66,7 +67,38 @@ const drawYearLabelsPlugin = {
     }
 };
 
+const StringMetricPlugin = {
+    id: 'stringMetric',
+    afterDraw(chart, args, options) {
+        if (!options.enabled || !options.metrics?.length || !options.rawData) return;
 
+        const { ctx, chartArea } = chart;
+
+        // Get the last metric
+        const lastMetric = options.metrics[options.metrics.length - 1];
+        if (!lastMetric?.name) return;
+
+        // Get the string value from the first data point and capitalize first letter
+        const rawValue = options.rawData[0]?.[lastMetric.name] || '';
+        const stringValue = rawValue.charAt(0).toUpperCase() + rawValue.slice(1);
+
+        if (!stringValue) return;
+
+        ctx.save();
+
+        // Position text in the middle at the very top of the canvas
+        const xPos = chartArea.left + (chartArea.right - chartArea.left) / 2;
+        const yPos = 10; // Fixed position from top of canvas
+
+        // Draw the text with capitalized first letter
+        ctx.font = `bold 12px ${ChartJS.defaults.font.family}`;
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#2D2D37'; // Keeping your dark gray color
+        ctx.fillText(stringValue, xPos, yPos);
+
+        ctx.restore();
+    }
+};
 
 ChartJS.register(
     CategoryScale,
@@ -79,8 +111,8 @@ ChartJS.register(
     Legend,
     Filler,
     ChartDataLabels,
-    drawYearLabelsPlugin
-
+    drawYearLabelsPlugin,
+    StringMetricPlugin
 );
 
 ChartJS.defaults.font.size = parseInt(SMALL_FONT_SIZE);
@@ -94,7 +126,7 @@ type Props = {
     dps?: number;
     enableDownloadAsCSV?: boolean;
     metrics: Measure[];
-    lineMetrics?: Measure[];
+    lineMetrics?: DimensionOrMeasure[];
     results?: DataResponse;
     reverseXAxis?: boolean;
     showLabels?: boolean;
@@ -109,35 +141,313 @@ type Props = {
     granularity?: Granularity;
     showSecondYAxis?: boolean;
     secondAxisTitle?: string;
+    InstoreDuration?: boolean;
+    InstoreDuration2?: boolean;
+    TrolleyUsage?: boolean;
+    Profitability?: boolean;
+    Profitability2?: boolean;
+    GeneralKPIs?: boolean;
+    Overview?: boolean;
+    Despar?: boolean;
+    PercentageSign?: boolean;
+    Master?: boolean;
+    MasterLines?: boolean;
+    MasterRetail?: boolean;
+    displayYaxis?: boolean;
+    displayXaxis?: boolean;
+    AbsolutePercentage?: boolean;
+    MarketingActivities?: boolean;
 };
 
+import { useMemo } from 'react';
+
+
+
 export default function BarChart({ ...props }: Props) {
-    return (
+    const chartDataResult = useMemo(() => chartData(props), [props]);
+    const needsScrollableContainer = chartDataResult.labels.length > 100;
+
+    // Helper function to format currency based on MasterRetail flag
+    const formatCurrency = (text: string) => {
+        if (!props.MasterRetail) return text;
+        return text.replace(/CLP\$/g, '€');
+    };
+
+    if (props.results?.isLoading) {
+        return <div style={{ height: '100%' }} />;
+    }
+
+    // Return blank component if xAxis doesn't exist in the first data item
+    const xAxisMap: Record<string, string> = {
+        'Other': 'big_dm.activity_4',
+        'Discount': 'big_dm.activity_1',
+        'Second placement': 'big_dm.activity_2',
+        'Regal Wochen': 'big_dm.activity_3',
+        'Design Edition': 'big_dm.activity_5',
+    };
+
+    if (props.results?.data?.length > 0 && props.xAxis) {
+        const firstDataItem = props.results.data[0];
+        const mappedXAxis = xAxisMap[props.xAxis] || props.xAxis;
+        const xAxisExists = Object.prototype.hasOwnProperty.call(firstDataItem, mappedXAxis);
+
+        if (!xAxisExists) {
+            // Instead of returning empty div, return null to keep the current chart
+            return null;
+        }
+    }
+
+    const renderChart = () => (
         <Chart
             type="bar"
             height="100%"
-            options={getBarChartOptions({
-                ...props, stacked: false,
-                KPIvalue: props.KPIvalue
-            })}
-            data={chartData(props)}
+            options={
+                getBarChartOptions({
+                    ...props,
+                    stacked: false,
+                    displayXaxis: props.displayXaxis,
+                    KPIvalue: props.KPIvalue ? formatCurrency(props.KPIvalue) : props.KPIvalue,
+                    showLabels: props.showLabels,
+                    showSecondYAxis: (props.KPIvalue === "Average Shopper" || props.KPIvalue === "Average Shopper (in %)" ||
+                        props.KPIvalue === "Average Duration" || props.KPIvalue === "Trolley Ratio (%)") ? false : props.showSecondYAxis,
+                    displayAsPercentage: props.PercentageSign,
+                    MasterLines: props.MasterLines,
+                    MasterRetail: props.MasterRetail,
+                    InstoreDuration: props.InstoreDuration,
+                    TrolleyUsage: props.TrolleyUsage,
+                    InstoreDuration2: props.InstoreDuration2,
+                    GeneralKPIs: props.GeneralKPIs,
+                    Profitability: props.Profitability,
+                    Profitability2: props.Profitability2,
+                    MarketingActivities: props.MarketingActivities,
+                    Despar: props.Despar
+                })
+            }
+            data={chartDataResult}
+
         />
     );
+
+    if (needsScrollableContainer) {
+        // Get the max value from the datasets for the right y-axis
+        const maxY1Value = Math.max(
+            ...(chartDataResult.datasets
+                .filter(ds => ds.yAxisID === 'y1')
+                .flatMap(ds => ds.data as number[])
+            ) || 0);
+
+
+        function niceStep(value: number) {
+            if (value <= 10) {
+                return 5;
+            } else if (value <= 50) {
+                return Math.ceil(value / 5) * 5;
+            } else if (value <= 100) {
+                return Math.ceil(value / 10) * 10;
+            } else {
+                const magnitude = Math.pow(10, Math.floor(Math.log10(value)));
+                return Math.ceil(value / magnitude) * magnitude;
+            }
+        }
+
+        const roughStep = maxY1Value / 10;  // try to keep around 5–6 ticks
+        const step = niceStep(roughStep);
+
+        // ensure we fully cover the data range
+        const maxTick = Math.ceil(maxY1Value / step) * step;
+        const numTicks = Math.floor(maxTick / step) + 1;
+
+        const ticks = [];
+        for (let i = 0; i < numTicks; i++) {
+            ticks.push(i * step);
+        }
+
+
+
+        function formatTickValue(value: number) {
+            if (value >= 1000) return (value / 1000).toFixed(0) + 'k';
+            return value.toFixed(0);
+        }
+
+
+        return (
+            <div
+                style={{
+                    overflowX: 'auto',
+                    width: '100%',
+                    position: 'relative',
+                    scrollbarWidth: 'thin',
+                    scrollbarColor: '#888 #f1f1f1',
+                }}
+            >
+                <div style={{ display: 'flex', position: 'relative', width: '100%' }}>
+                    {/* Scrollable chart area with single scrollbar */}
+                    <div style={{ overflowX: 'auto', flexGrow: 1 }}>
+                        <div
+                            style={{
+                                minWidth: `${Math.max(chartDataResult.labels.length, 30) * 6}px`, // Adjust width per data points
+                                height: '400px',
+                                willChange: 'transform',
+                            }}
+                        >
+                            {renderChart()}
+                        </div>
+                    </div>
+
+                    {/* Fixed Y1 axis container */}
+
+                    {props.showSecondYAxis && (
+                        <div
+                            style={{
+                                width: '80px',
+                                paddingLeft: '0px',
+                                background: '#fff',
+                                display: 'flex',
+                                flexDirection: 'row',
+                                position: 'sticky',
+                                right: 0,
+                                top: 0,
+                                zIndex: 10,
+                                height: '400px',
+                                boxSizing: 'border-box',
+                                userSelect: 'none',
+                            }}
+                        >
+                            {/* Inner container with reduced height and vertical axis line */}
+                            <div
+                                style={{
+                                    borderLeft: '1px solid #ddd', // axis line
+                                    height: '85%',                // shorter than full height
+                                    margin: '40% 0',               // space top and bottom
+                                    display: 'flex',
+                                    flexDirection: 'row',
+                                    flexGrow: 1,
+                                }}
+                            >
+                                {/* Tick labels */}
+                                <div
+                                    style={{
+                                        flexGrow: 1,
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        justifyContent: 'flex-end',
+                                        gap: '6px', // optional: controls space between ticks
+
+                                        alignItems: 'flex-end',
+                                        paddingLeft: '6px',
+                                        paddingRight: '6px',
+                                        fontSize: '12px',
+                                        color: '#555',
+                                        lineHeight: 1.2,
+                                    }}
+                                >
+                                    {ticks
+                                        .slice()
+                                        .reverse()
+                                        .map((tickValue, index) => (
+                                            <div key={index} style={{ marginTop: '12px' }}>{formatTickValue(tickValue)}</div>
+                                        ))}
+                                </div>
+                            </div>
+
+                            {/* Vertical title */}
+                            <div
+                                style={{
+                                    writingMode: 'vertical-rl',
+                                    textAlign: 'center',
+                                    fontSize: '13px',
+                                    paddingLeft: '8px',
+                                    flexShrink: 0,
+                                    color: '#444',
+                                    userSelect: 'none',
+                                    alignSelf: 'center',
+                                    height: '100%',
+                                    display: 'flex',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                }}
+                            >
+                                {props.secondAxisTitle}
+                            </div>
+                        </div>
+                    )}
+
+
+                </div>
+            </div>
+
+        );
+    }
+    return renderChart();
 }
 
+// ... (previous imports remain the same)
+
 function chartData(props: Props): ChartData<'bar' | 'line'> {
-    const { results, xAxis, metrics, granularity, lineMetrics = [], showSecondYAxis, KPIvalue } = props;
+    const { results, xAxis, metrics, granularity, lineMetrics = [], showSecondYAxis, MarketingActivities, AbsolutePercentage, Master, MasterLines, KPIvalue, Overview, Despar, InstoreDuration, InstoreDuration2, TrolleyUsage, Profitability, Profitability2, GeneralKPIs, PercentageSign, MasterRetail } = props;
+
+    // Helper function to format currency based on MasterRetail flag
+    const formatCurrency = (text: string) => {
+        if (!MasterRetail) return text;
+        return text.replace(/CLP\$/g, '€');
+    };
 
     let dateFormat: string | undefined;
     if (xAxis.nativeType === 'time' && granularity) {
         dateFormat = DATE_DISPLAY_FORMATS[granularity];
     }
 
+    const durationGroups = [
+        'customer_journeys.duration_group_five',
+        'customer_journeys.duration_group_ten',
+        'customer_journeys.duration_group_fifteen',
+        'customer_journeys.duration_group_thirty',
+        'customer_journeys.duration_group_sixty'
+    ];
+
+    // Filter data based on xAxis type
+    let filteredData = durationGroups.includes(xAxis)
+        ? results?.data?.filter(d => d[xAxis] !== null)
+        : results?.data;
+
+    // Special handling for overview.hour - filter hours between 8 and 21
+    if (xAxis === 'overview.hour') {
+        filteredData = filteredData?.filter(d => {
+            const hour = parseInt(d[xAxis], 10);
+            return hour >= 8 && hour <= 21;
+        });
+
+        // Sort by hour to ensure correct order
+        filteredData?.sort((a, b) => parseInt(a[xAxis], 10) - parseInt(b[xAxis], 10));
+    }
+
+    // Handle MarketingActivities xAxis transformations
+    let xAxisToUse = xAxis;
+    if (MarketingActivities) {
+        if (xAxis === 'Other') {
+            xAxisToUse = 'big_dm.activity_4';
+        } else if (xAxis === 'Discount') {
+            xAxisToUse = 'big_dm.activity_1';
+        } else if (xAxis === 'Second placement') {
+            xAxisToUse = 'big_dm.activity_2';
+        } else if (xAxis === 'Regal Wochen') {
+            xAxisToUse = 'big_dm.activity_3';
+        } else if (xAxis === 'Design Edition') {
+            xAxisToUse = 'big_dm.activity_5';
+        }
+    }
+
     const labels = [
         ...new Set(
-            results?.data?.map((d: { [p: string]: string }) => {
-                const value = d[xAxis];
-                return formatValue(value === null ? '' : value, {
+            filteredData?.map((d: { [p: string]: any }) => {
+                const rawValue = d[xAxisToUse];
+
+                // Handle marketingActivities boolean display
+                if (MarketingActivities && typeof rawValue === 'boolean') {
+                    return `Marketing Activities : ${rawValue ? 'Yes' : 'No'}`;
+                }
+
+                return formatValue(rawValue === null ? '' : rawValue, {
                     meta: xAxis?.meta,
                     dateFormat: dateFormat,
                 });
@@ -145,32 +455,169 @@ function chartData(props: Props): ChartData<'bar' | 'line'> {
         ),
     ] as string[];
 
-    const BAR_COLOR = '#62626e';
-    const LINE_COLORS = ['#62626e', '#F04B55'];
+
+    // Define colors based on InstoreDuration
+    const BAR_COLOR = (InstoreDuration || InstoreDuration2 || TrolleyUsage || Overview) ? '#F04B55' : '#62626e';
+    const LINE_COLOR = (InstoreDuration || InstoreDuration2 || TrolleyUsage) ? '#af3241' : '#F04B55';
+    const LINE_COLORS = InstoreDuration ? ['#af3241', '#af3241'] : ['#62626e', '#F04B55'];
 
     let selectedMetrics: Measure[] = [];
-    let selectedLineMetrics: Measure[] = [];
+    let selectedLineMetrics: DimensionOrMeasure[] = [];
 
-    if (xAxis === 'receipts_retail.hour' || xAxis === 'receipts_retail.date') {
-        if (KPIvalue === 'Sales (Units)') {
-            selectedLineMetrics = [lineMetrics[0], lineMetrics[2]];
-        }
-        else if (KPIvalue === 'Revenue (CLP$)') {
-            selectedLineMetrics = [lineMetrics[1], lineMetrics[2]];
-        }
-        else {
-            selectedLineMetrics = lineMetrics;
-        }
-    }
-    else if ((xAxis === 'receipts_retail.dow') || (xAxis === 'receipts_retail.month')) {
-        if (KPIvalue === 'Sales (Units)') {
+    if (InstoreDuration) {
+        if (KPIvalue === 'Average Sales (Units)') {
             if (metrics.length > 0) selectedMetrics = [metrics[0]];
             if (lineMetrics.length > 0) selectedLineMetrics = [lineMetrics[lineMetrics.length - 1]];
-        }
-        else if (KPIvalue === 'Revenue (CLP$)') {
+        } else if (KPIvalue === formatCurrency('Average Revenue (CLP$)')) {
             if (metrics.length > 0) selectedMetrics = [metrics[1]];
             if (lineMetrics.length > 0) selectedLineMetrics = [lineMetrics[lineMetrics.length - 1]];
+        } else if (KPIvalue === 'Average Shopper') {
+            if (metrics.length > 0) selectedMetrics = [metrics[2]];
+        } else if (KPIvalue === 'Average Shopper (in %)') {
+            if (metrics.length > 0) selectedMetrics = [metrics[3]];
         }
+    }
+    else if (InstoreDuration2) {
+        if (xAxis === 'customer_journeys.hour' || xAxis === 'customer_journeys.date') {
+            if (KPIvalue === 'Average Sales (Units)') {
+                selectedLineMetrics = [lineMetrics[2], lineMetrics[0]];
+            } else if (KPIvalue === formatCurrency('Average Revenue (CLP$)')) {
+                selectedLineMetrics = [lineMetrics[2], lineMetrics[1]];
+            } else if (KPIvalue === 'Average Duration') {
+                selectedLineMetrics = [lineMetrics[2]];
+            }
+        } else if ((xAxis === 'customer_journeys.dow') || (xAxis === 'customer_journeys.month1')) {
+            if (KPIvalue === 'Average Sales (Units)') {
+                if (metrics.length > 0) selectedMetrics = [metrics[2]];
+                if (lineMetrics.length > 0) selectedLineMetrics = [lineMetrics[0]];
+            } else if (KPIvalue === formatCurrency('Average Revenue (CLP$)')) {
+                if (metrics.length > 0) selectedMetrics = [metrics[2]];
+                if (lineMetrics.length > 0) selectedLineMetrics = [lineMetrics[1]];
+            } else if (KPIvalue === 'Average Duration') {
+                if (metrics.length > 0) selectedMetrics = [metrics[2]];
+            }
+        }
+    }
+
+    else if (GeneralKPIs) {
+        if (xAxis === 'receipts_retail.hour' || xAxis === 'receipts_retail.date') {
+            if (KPIvalue === 'Sales (Units)') {
+                selectedLineMetrics = [lineMetrics[0], lineMetrics[2]];
+            } else if (KPIvalue === formatCurrency('Revenue (CLP$)')) {
+                selectedLineMetrics = [lineMetrics[1], lineMetrics[2]];
+            } else {
+                selectedLineMetrics = lineMetrics;
+            }
+        } else if ((xAxis === 'receipts_retail.dow') || (xAxis === 'receipts_retail.month')) {
+            if (KPIvalue === 'Sales (Units)') {
+                if (metrics.length > 0) selectedMetrics = [metrics[0]];
+                if (lineMetrics.length > 0) selectedLineMetrics = [lineMetrics[lineMetrics.length - 1]];
+            } else if (KPIvalue === formatCurrency('Revenue (CLP$)')) {
+                if (metrics.length > 0) selectedMetrics = [metrics[1]];
+                if (lineMetrics.length > 0) selectedLineMetrics = [lineMetrics[lineMetrics.length - 1]];
+            }
+        }
+    }
+
+    else if (Profitability) {
+        if (xAxis === 'receipts_retail.hour') {
+            if (metrics.length > 0) selectedMetrics = [metrics[0], metrics[1]];
+
+        } else if ((xAxis === 'receipts_retail.dow')) {
+            if (metrics.length > 0) selectedMetrics = [metrics[2], metrics[3]];
+
+        } else if (xAxis === 'receipts_retail.date') {
+            if (lineMetrics.length > 0) selectedLineMetrics = [lineMetrics[0], lineMetrics[1]];
+
+        } else if ((xAxis === 'receipts_retail.month')) {
+            if (metrics.length > 0) selectedMetrics = [metrics[4], metrics[5]];
+
+        }
+    }
+
+    else if (Profitability2) {
+        if (KPIvalue === 'Sales (Units)') {
+            if (xAxis === 'receipts_retail.hour') {
+                if (metrics.length > 0) selectedMetrics = [metrics[0], metrics[1]];
+
+            } else if ((xAxis === 'receipts_retail.dow')) {
+                if (metrics.length > 0) selectedMetrics = [metrics[2], metrics[3]];
+
+            } else if (xAxis === 'receipts_retail.date') {
+                if (lineMetrics.length > 0) selectedLineMetrics = [lineMetrics[0], lineMetrics[1]];
+
+            } else if ((xAxis === 'receipts_retail.month')) {
+                if (metrics.length > 0) selectedMetrics = [metrics[4], metrics[5]];
+
+            }
+
+        }
+        else if (KPIvalue === ('Revenue (CLP$)') || KPIvalue === ('Revenue (€)')) {
+            if (xAxis === 'receipts_retail.hour') {
+                if (metrics.length > 0) selectedMetrics = [metrics[6], metrics[7]];
+
+            } else if ((xAxis === 'receipts_retail.dow')) {
+                if (metrics.length > 0) selectedMetrics = [metrics[8], metrics[9]];
+
+            } else if (xAxis === 'receipts_retail.date') {
+                if (lineMetrics.length > 0) selectedLineMetrics = [lineMetrics[2], lineMetrics[3]];
+
+            } else if ((xAxis === 'receipts_retail.month')) {
+                if (metrics.length > 0) selectedMetrics = [metrics[10], metrics[11]];
+
+            }
+
+        }
+
+    }
+
+    else if (Overview) {
+        if (xAxis === "overview.date") {
+            if (lineMetrics.length > 0) selectedLineMetrics = [lineMetrics[0]];
+        } else {
+            if (metrics.length > 0) selectedMetrics = [metrics[0]];
+        }
+    } else if (Master) {
+        if (metrics.length > 0) selectedMetrics = [metrics[0], metrics[1]];
+    } else if (MasterLines) {
+        if (KPIvalue === 'Temperature (°C)') {
+            if (lineMetrics.length > 0) selectedLineMetrics = [lineMetrics[0], lineMetrics[lineMetrics.length - 1]];
+        } else if (KPIvalue === 'Temperature (Feels Like °C)') {
+            if (lineMetrics.length > 0) selectedLineMetrics = [lineMetrics[1], lineMetrics[lineMetrics.length - 1]];
+        } else if (KPIvalue === 'Clouds (%)') {
+            if (lineMetrics.length > 0) selectedLineMetrics = [lineMetrics[3], lineMetrics[lineMetrics.length - 1]];
+        } else if (KPIvalue === 'Rain (millimeter)') {
+            if (lineMetrics.length > 0) selectedLineMetrics = [lineMetrics[2], lineMetrics[lineMetrics.length - 1]];
+        } else if (KPIvalue === 'Snow (millimeter)') {
+            if (lineMetrics.length > 0) selectedLineMetrics = [lineMetrics[4], lineMetrics[lineMetrics.length - 1]];
+        }
+    }
+    else if (TrolleyUsage) {
+        if (xAxis === 'customer_journeys.hour' || xAxis === 'customer_journeys.date') {
+            if (KPIvalue === 'Average sales with trolley (Units)') {
+                selectedLineMetrics = [lineMetrics[2], lineMetrics[0]];
+            } else if (KPIvalue === formatCurrency('Average revenue with trolley (CLP$)')) {
+                selectedLineMetrics = [lineMetrics[2], lineMetrics[1]];
+            } else if (KPIvalue === 'Trolley Ratio (%)') {
+                selectedLineMetrics = [lineMetrics[2]];
+            }
+        } else if ((xAxis === 'customer_journeys.dow') || (xAxis === 'customer_journeys.month1')) {
+            if (KPIvalue === 'Average sales with trolley (Units)') {
+                if (metrics.length > 0) selectedMetrics = [metrics[2]];
+                if (lineMetrics.length > 0) selectedLineMetrics = [lineMetrics[0]];
+            } else if (KPIvalue === formatCurrency('Average revenue with trolley (CLP$)')) {
+                if (metrics.length > 0) selectedMetrics = [metrics[2]];
+                if (lineMetrics.length > 0) selectedLineMetrics = [lineMetrics[1]];
+            } else if (KPIvalue === 'Trolley Ratio (%)') {
+                if (metrics.length > 0) selectedMetrics = [metrics[2]];
+            }
+        }
+    }
+
+    else if (MarketingActivities) {
+        if (metrics.length === 3) { selectedMetrics = [metrics[0], metrics[1]]; }
+        else if (metrics.length === 2) { selectedMetrics = [metrics[0]]; }
+
     }
     else {
         selectedMetrics = metrics;
@@ -179,45 +626,145 @@ function chartData(props: Props): ChartData<'bar' | 'line'> {
 
     const hoverColorMap: Record<string, string> = {
         '#f04b55': '#af3241',
+        '#af3241': '#8a2a2a',
         '#62626e': '#2d2d37',
     };
 
-    const metricsDatasets = selectedMetrics.map((metric) => ({
-        barPercentage: 0.8,
-        barThickness: 'flex',
-        maxBarThickness: 50,
-        minBarLength: 0,
-        borderRadius: 4,
-        type: 'bar' as const,
-        label: metric.title,
-        data: results?.data?.map((d) => parseFloat(d[metric.name] || 0)) || [],
-        backgroundColor: BAR_COLOR,
-        borderColor: BAR_COLOR,
-        hoverBackgroundColor: hoverColorMap[BAR_COLOR.toLowerCase()] ?? BAR_COLOR,
-        order: 1,
-    }));
+    const metricsDatasets = selectedMetrics.map((metric, index) => {
+        let backgroundColor = BAR_COLOR;
+        let hoverBackgroundColor = (InstoreDuration || InstoreDuration2 || TrolleyUsage)
+            ? '#af3241'
+            : hoverColorMap[BAR_COLOR.toLowerCase()] ?? BAR_COLOR;
 
-    const lineMetricsDatasets = selectedLineMetrics.map((metric, i) => ({
-        label: metric.title,
-        data: results?.data?.map((d) => parseFloat(d[metric.name] || 0)) || [],
-        backgroundColor: selectedLineMetrics.length === 2 ? LINE_COLORS[i % LINE_COLORS.length] : '#F04B55',
-        borderColor: selectedLineMetrics.length === 2 ? LINE_COLORS[i % LINE_COLORS.length] : '#F04B55',
-        hoverBackgroundColor: selectedLineMetrics.length === 2 ? hoverColorMap[LINE_COLORS[i % LINE_COLORS.length].toLowerCase()] ?? LINE_COLORS[i % LINE_COLORS.length] : hoverColorMap['#f04b55'],
-        cubicInterpolationMode: 'monotone' as const,
-        pointRadius: 2,
-        pointHoverRadius: 3,
-        type: 'line' as const,
-        order: 0,
-        yAxisID:
-            showSecondYAxis && selectedLineMetrics.length === 2
-                ? i === 0
-                    ? 'y'
-                    : 'y1'
-                : 'y1',
-    }));
+        if (Master) {
+            if (index === 0) {
+                backgroundColor = '#62626e';
+                hoverBackgroundColor = '#2d2d37';
+            } else if (index === 1) {
+                backgroundColor = '#f04b55';
+                hoverBackgroundColor = '#af3241';
+            }
+        }
+
+        // Add this condition for Profitability case
+        if ((Profitability || Profitability2) && selectedMetrics.length === 2 && selectedLineMetrics.length === 0) {
+            if (index === 0) {
+                backgroundColor = '#f04b55';
+                hoverBackgroundColor = '#af3241';
+            } else if (index === 1) {
+                backgroundColor = '#62626e';
+                hoverBackgroundColor = '#2d2d37';
+            }
+        }
+
+        else if (MarketingActivities && selectedLineMetrics.length === 0) {
+            if (selectedMetrics.length === 2) {
+                if (index === 1) {
+                    backgroundColor = '#f04b55';
+                    hoverBackgroundColor = '#af3241';
+                } else if (index === 0) {
+                    backgroundColor = '#62626e';
+                    hoverBackgroundColor = '#2d2d37';
+                }
+            }
+
+            else if (selectedMetrics.length === 1) {
+                backgroundColor = '#f04b55';
+                hoverBackgroundColor = '#af3241';
+
+            }
+        }
+
+        return {
+            barPercentage: 0.8,
+            barThickness: 'flex',
+            maxBarThickness: 200,
+            minBarLength: 0,
+            borderRadius: 4,
+            type: 'bar' as const,
+            label: formatCurrency(metric.title),
+            data: filteredData?.map((d) => parseFloat(d[metric.name] || 0)) || [],
+            backgroundColor,
+            borderColor: backgroundColor,
+            hoverBackgroundColor,
+            order: 1,
+        };
+    });
+
+    const lineMetricsDatasets = selectedLineMetrics.map((metric, i) => {
+        let backgroundColor = LINE_COLOR;
+        let borderColor = LINE_COLOR;
+        let hoverBackgroundColor = hoverColorMap[LINE_COLOR.toLowerCase()];
+
+        if (InstoreDuration2 || TrolleyUsage) {
+            if (selectedLineMetrics.length === 2 && selectedMetrics.length === 0) {
+                backgroundColor = i === 0 ? '#f04b55' : '#af3241';
+            } else if (selectedLineMetrics.length === 1) {
+                backgroundColor = selectedMetrics.length === 0 ? '#f04b55' : '#af3241';
+            }
+
+            borderColor = backgroundColor;
+            hoverBackgroundColor = hoverColorMap[backgroundColor.toLowerCase()] ?? backgroundColor;
+        } else if (selectedLineMetrics.length === 2) {
+            backgroundColor = LINE_COLORS[i % LINE_COLORS.length];
+            borderColor = backgroundColor;
+            hoverBackgroundColor = hoverColorMap[backgroundColor.toLowerCase()] ?? backgroundColor;
+        }
+
+        return {
+            label: formatCurrency(metric.title),
+            data: filteredData?.map((d) => parseFloat(d[metric.name] || 0)) || [],
+            backgroundColor,
+            borderColor,
+            hoverBackgroundColor,
+            cubicInterpolationMode: 'monotone' as const,
+            pointRadius: 2,
+            pointHoverRadius: 3,
+            type: 'line' as const,
+            order: 0,
+            yAxisID: (selectedLineMetrics.length === 1 && selectedMetrics.length === 0) ? 'y' :
+                showSecondYAxis && selectedLineMetrics.length === 2
+                    ? i === 0
+                        ? 'y'
+                        : 'y1'
+                    : 'y1',
+        };
+    });
+
+    // Combine all datasets
+    const allDatasets = [...metricsDatasets, ...lineMetricsDatasets];
+
+    // Apply AbsolutePercentage transformation if needed
+    if (AbsolutePercentage) {
+        // Combine only the datasets we want to transform (both metrics and lineMetrics)
+        const datasetsToTransform = [...metricsDatasets, ...lineMetricsDatasets];
+
+        if (selectedMetrics.length <= 1 && selectedLineMetrics.length <= 1) {
+            // ---------- global-total behaviour ---------- //
+            const globalTotal = labels.reduce(
+                (tot, _lbl, i) =>
+                    tot + datasetsToTransform.reduce((s, ds) => s + (+ds.data[i] || 0), 0),
+                0,
+            );
+            if (globalTotal !== 0) {
+                datasetsToTransform.forEach((ds) => {
+                    ds.data = ds.data.map((v) => ((+v / globalTotal) * 100));
+                });
+            }
+        } else {
+            // ---------- per-label behaviour ---------- //
+            labels.forEach((_lbl, li) => {
+                const labelTotal = datasetsToTransform.reduce((s, ds) => s + (+ds.data[li] || 0), 0);
+                if (labelTotal === 0) return;
+                datasetsToTransform.forEach((ds) => {
+                    ds.data[li] = (+ds.data[li] / labelTotal) * 100;
+                });
+            });
+        }
+    }
 
     return {
         labels,
-        datasets: [...metricsDatasets, ...lineMetricsDatasets],
+        datasets: allDatasets,
     };
 }

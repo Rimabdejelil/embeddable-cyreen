@@ -20,7 +20,7 @@ export const meta = {
   name: 'PivotTable',
   label: 'Pivot table',
   classNames: ['inside-card'],
-  category: 'Charts: essentials',
+  category: 'Embeddable Components',
   inputs: [
     {
       name: 'ds',

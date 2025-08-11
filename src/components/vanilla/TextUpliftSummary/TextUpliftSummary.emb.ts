@@ -12,7 +12,7 @@ import {
 export const meta = {
   name: 'TextUpliftSummary',
   label: 'Text Uplift Summary',
-  category: 'Text',
+  category: 'Cyreen Components',
   inputs: [
     {
       name: 'ds',
@@ -73,6 +73,20 @@ export const meta = {
       type: 'number',
       label: 'Body font size in pixels',
       category: 'Formatting'
+    },
+    {
+      name: 'enableDownloadAsCSV',
+      type: 'boolean',
+      label: 'Show download as CSV',
+      category: 'Export options',
+      defaultValue: true,
+    },
+    {
+      name: 'enableDownloadAsPNG',
+      type: 'boolean',
+      label: 'Show download as PNG',
+      category: 'Export options',
+      defaultValue: true,
     },
   ]
 } as const satisfies EmbeddedComponentMeta;

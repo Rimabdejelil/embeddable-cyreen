@@ -7,7 +7,7 @@ import Component from './index';
 export const meta = {
   name: 'Text',
   label: 'Text component',
-  category: 'Text',
+  category: 'Cyreen Components',
   inputs: [
     {
       name: 'title',
@@ -28,6 +28,13 @@ export const meta = {
       type: 'string',
       label: 'Granularity',
       description: 'The chosen granularity',
+      category: 'Configure chart'
+    },
+    {
+      name: 'weathertypes',
+      type: 'boolean',
+      label: 'Weather Types',
+      description: 'Weather Types',
       category: 'Configure chart'
     },
     {

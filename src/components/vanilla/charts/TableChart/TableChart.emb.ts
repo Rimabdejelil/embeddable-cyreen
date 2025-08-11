@@ -13,11 +13,11 @@ import Component, { Props } from './index';
 
 export const meta = {
   name: 'TableChart',
-  label: 'Table',
+  label: 'Basic Table',
   defaultHeight: 300,
   defaultWidth: 900,
   classNames: ['inside-card'],
-  category: 'Charts: essentials',
+  category: 'Cyreen Components',
   inputs: [
     {
       name: 'ds',
@@ -42,6 +42,12 @@ export const meta = {
       name: 'title',
       type: 'string',
       label: 'Title',
+      category: 'Chart settings',
+    },
+    {
+      name: 'MasterRetail',
+      type: 'boolean',
+      label: 'Master Retail',
       category: 'Chart settings',
     },
     {

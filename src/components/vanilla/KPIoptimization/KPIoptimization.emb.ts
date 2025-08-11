@@ -6,6 +6,7 @@ import Component from './index';
 export const meta = {
   name: 'KPIoptimization',
   label: 'KPI Optimization',
+  category: 'Cyreen Components',
   inputs: [
     {
       name: 'ds',
@@ -41,6 +42,13 @@ export const meta = {
       description: 'Absolute/Percentage',
       category: 'Configure chart',
       defaultValue: false
+    },
+    {
+      name: 'Despar',
+      type: 'boolean',
+      label: 'Despar',
+      category: 'Chart settings',
+      defaultValue: false,
     },
     {
       name: 'sortBy',

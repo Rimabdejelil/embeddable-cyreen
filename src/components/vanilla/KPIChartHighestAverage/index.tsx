@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { DataResponse, Dimension, Measure } from '@embeddable.com/core';
+import DownloadMenu from '../DownloadMenu';
 
 type Props = {
     title?: string;
@@ -7,13 +8,24 @@ type Props = {
     results: DataResponse;
     xAxis?: Dimension;
     PercentageSign?: boolean;
+    enableDownloadAsCSV?: boolean;
+    enableDownloadAsPNG?: boolean
 };
 
-export default ({ title, metrics, results, xAxis, PercentageSign }: Props) => {
+export default (props: Props) => {
+    const {
+        title, metrics, results, xAxis, PercentageSign,
+        enableDownloadAsCSV,
+        enableDownloadAsPNG
+    } = props;
     const { isLoading, data, error } = results;
     const [showTooltip, setShowTooltip] = useState(false);
     const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
     const [containerWidth, setContainerWidth] = useState(0);
+    const [isOverDownloadMenu, setIsOverDownloadMenu] = useState(false);
+
+    const chartRef = useRef<HTMLDivElement>(null);
+    const [preppingDownload, setPreppingDownload] = useState(false);
 
     const firstMetric = metrics?.[0];
     const firstResult = data?.[1];
@@ -38,6 +50,26 @@ export default ({ title, metrics, results, xAxis, PercentageSign }: Props) => {
             ? `${Math.round(highestKpiValue)} minutes`
             : 'No data';
     }
+
+    const handleMouseEnter = (e: React.MouseEvent) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const yPos = e.clientY - rect.top;
+        // Only show tooltip if not in top 20px and not over download menu
+        setShowTooltip(yPos > 20 && !isOverDownloadMenu);
+    };
+
+    const handleMouseMove = (e: React.MouseEvent) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const yPos = e.clientY - rect.top;
+
+        setMousePos({
+            x: e.clientX - rect.left,
+            y: yPos,
+        });
+
+        // Hide tooltip if in top 20px or over download menu
+        setShowTooltip(yPos > 20 && !isOverDownloadMenu);
+    };
 
     const tooltipContentJSX = firstMetric ? (
         <div>
@@ -64,30 +96,95 @@ export default ({ title, metrics, results, xAxis, PercentageSign }: Props) => {
     ) : null;
 
     return (
-        <div style={{
-            border: '1px solid #ccc',
-            padding: '15px',
-            borderRadius: '8px',
-            boxShadow: '0 0 10px rgba(0, 0, 0, 0.15)',
-            position: 'relative',
-            height: '100%',
-            backgroundColor: '#AF3241'
-        }}
-            onMouseEnter={() => setShowTooltip(true)}
-            onMouseLeave={() => setShowTooltip(false)}
-            onMouseMove={(e) => {
-                const rect = e.currentTarget.getBoundingClientRect();
-                setMousePos({
-                    x: e.clientX - rect.left,
-                    y: e.clientY - rect.top,
-                });
-            }}
+        <div
             ref={(el) => {
+                chartRef.current = el;
                 if (el) {
                     const { width } = el.getBoundingClientRect();
                     setContainerWidth(width);
                 }
-            }}>
+            }}
+            style={{
+                border: '1px solid #ccc',
+                padding: '15px',
+                borderRadius: '8px',
+                boxShadow: '0 0 10px rgba(0, 0, 0, 0.15)',
+                position: 'relative',
+                height: '100%',
+                backgroundColor: '#AF3241'
+            }}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={() => {
+                // Only hide tooltip if not over download menu
+                if (!isOverDownloadMenu) {
+                    setShowTooltip(false);
+                }
+            }}
+            onMouseMove={handleMouseMove}
+        >
+
+
+
+
+
+
+
+
+            {/* Download Menu - with mouse event handlers */}
+            {(enableDownloadAsCSV || enableDownloadAsPNG) && (
+                <div
+                    style={{
+                        position: 'absolute',
+                        top: '15px',
+                        right: '15px',
+                        fontSize: '14px',
+                        zIndex: 1000,
+                        backgroundColor: 'transparent',
+                        padding: 0,
+                        margin: 0,
+                        border: 'none',
+                        outline: 'none'
+                    }}
+                    onMouseEnter={() => setIsOverDownloadMenu(true)}
+                    onMouseLeave={() => {
+                        setIsOverDownloadMenu(false);
+                        // Reset the tooltip visibility when leaving the download area
+                        if (!preppingDownload) {
+                            setShowTooltip(true);
+                        }
+                    }}
+                >
+                    <DownloadMenu
+                        title={props.title}
+                        csvOpts={{
+                            chartName: props.title || 'chart',
+                            props: {
+                                ...props,
+                                results: results,
+                            },
+                        }}
+                        enableDownloadAsCSV={enableDownloadAsCSV}
+                        enableDownloadAsPNG={enableDownloadAsPNG}
+                        pngOpts={{ chartName: props.title || 'chart', element: chartRef.current }}
+                        preppingDownload={preppingDownload}
+                        setPreppingDownload={(prepping) => {
+                            setPreppingDownload(prepping);
+                            // When download preparation is complete, reset the hover states
+                            if (!prepping) {
+                                setIsOverDownloadMenu(false);
+                                setShowTooltip(true);
+                            }
+                        }}
+                        style={{
+                            backgroundColor: 'transparent',
+                            border: 'none',
+                            padding: 0,
+                            margin: 0
+                        }}
+                    />
+                </div>
+            )}
+
             <h2 style={{
                 color: 'white',
                 fontSize: '23px',
@@ -108,7 +205,7 @@ export default ({ title, metrics, results, xAxis, PercentageSign }: Props) => {
                 position: 'relative'
             }}>
                 <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <span style={{ fontSize: '20px', marginRight: '4px' }}>In </span> {highestKpiHourGroup}
+                    <span style={{ fontSize: '20px', marginRight: '4px' }}>in </span> {highestKpiHourGroup}
                 </div>
 
                 <div>

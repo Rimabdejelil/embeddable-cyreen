@@ -1,16 +1,28 @@
-import React from "react";
+import React, { useRef, useEffect, useState } from 'react';
 import { Dataset, Dimension, Measure } from "@embeddable.com/core";
 import { DataResponse } from "@embeddable.com/core";
+import DownloadMenu from '../vanilla/DownloadMenu';
 
 // Props for the table component
 type Props = {
   ds: Dataset;
   columns: (Dimension | Measure)[]; // Columns passed as props
   results: DataResponse; // Results passed as props
+  enableDownloadAsPNG?: boolean;
+  enableDownloadAsCSV?: boolean;
+  title?: string;
+  Despar?: boolean;
 };
 
-const TableComponent = ({ ds, columns, results }: Props) => {
+export default (props: Props) => {
+  const {
+    ds, columns, results, enableDownloadAsCSV,
+    enableDownloadAsPNG, title, Despar
+  } = props;
   const { isLoading, data, error } = results;
+
+  const [preppingDownload, setPreppingDownload] = useState(false); // Add state for download preparation
+  const chartRef = useRef<HTMLDivElement>(null);
 
   if (isLoading) {
     return <div>Loading...</div>;
@@ -37,7 +49,45 @@ const TableComponent = ({ ds, columns, results }: Props) => {
   console.log("Second Column:", totalValue);
 
   return (
-    <div className="table-container">
+    <div className="table-container"
+      ref={chartRef}>
+      {/* Add DownloadMenu component with improved styling */}
+      {(enableDownloadAsCSV || enableDownloadAsPNG) && (
+        <div style={{
+          position: 'absolute',
+          top: '15px',
+          right: '15px',
+          fontSize: '14px',
+          zIndex: 1000,
+          backgroundColor: 'transparent', // Changed to transparent
+          padding: 0,
+          margin: 0,
+          border: 'none',
+          outline: 'none'
+        }}>
+          <DownloadMenu
+            title={"Smart Stores"}
+            csvOpts={{
+              chartName: props.title || 'chart',
+              props: {
+                ...props,
+                results: results,
+              },
+            }}
+            enableDownloadAsCSV={enableDownloadAsCSV}
+            enableDownloadAsPNG={enableDownloadAsPNG}
+            pngOpts={{ chartName: props.title || 'chart', element: chartRef.current }}
+            preppingDownload={preppingDownload}
+            setPreppingDownload={setPreppingDownload}
+            style={{
+              backgroundColor: 'transparent',
+              border: 'none',
+              padding: 0,
+              margin: 0
+            }}
+          />
+        </div>
+      )}
       <table className="table">
         {/* Table Head */}
         <thead className="table-header">
@@ -58,18 +108,22 @@ const TableComponent = ({ ds, columns, results }: Props) => {
                   {row[col.name] !== undefined
                     ? colIndex === 1
                       ? parseFloat(row[col.name]) > 999
-                        ? parseFloat(row[col.name]).toLocaleString("en-US")
+                        ? Despar
+                          ? parseFloat(row[col.name]).toLocaleString("de-DE")
+                          : parseFloat(row[col.name]).toLocaleString("en-US")
                         : row[col.name]
                       : row[col.name]
                     : "N/A"}
+
                 </td>
 
               ))}
               <td className="table-cell">
                 {totalValue > 0
-                  ? ((parseFloat(row["impressions.impression_unfiltered_calculation2"]) / totalValue) * 100).toFixed(0) + "%"
+                  ? ((parseFloat(row[secondColumn] || 0) / totalValue) * 100).toFixed(0) + "%"
                   : "0.00%"}
               </td>
+
             </tr>
           ))}
         </tbody>
@@ -79,19 +133,19 @@ const TableComponent = ({ ds, columns, results }: Props) => {
       <style jsx>{`
         .table-container {
           overflow: hidden;
-          padding: 15px;
           height:100%;
           background-color: #fff;
           box-shadow: 0 0 10px rgba(0, 0, 0, 0.15);
           border-radius: 8px;
-          font-family: Arial, sans-serif;
-          font-size: 13px;
+          
           border: 1px solid #ccc,
         }
 
         .table {
           width: 100%;
           height:100%;
+          font-family: Arial, sans-serif;
+          font-size: 13px;
           border-collapse: collapse;
           border-radius: 8px;
           border: 1px solid #ccc,
@@ -148,4 +202,3 @@ const TableComponent = ({ ds, columns, results }: Props) => {
   );
 };
 
-export default TableComponent;

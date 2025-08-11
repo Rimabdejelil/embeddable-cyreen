@@ -21,6 +21,45 @@
 
 }
 
+:host(.inside-card-heatmap) {
+  /*  box-shadow: 0px 1px 4px rgba(28, 28, 33, 0.2);*/
+
+
+  border: 1px solid #ccc;
+  padding: 8px;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.15);
+
+
+}
+
+
+:host(.inside-card-map) {
+  /*  box-shadow: 0px 1px 4px rgba(28, 28, 33, 0.2);*/
+
+
+  border: 1px solid #ccc;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.15);
+  width: 100%;
+  height: 100%;
+  position: relative;
+
+}
+
+:host(.inside-card-red) {
+  /*  box-shadow: 0px 1px 4px rgba(28, 28, 33, 0.2);*/
+
+
+  border: 1px solid #ccc;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.15);
+  background-color: #a53241;
+
+}
+
 /*
 .rdp-root {
   --rdp-accent-background-color	The accent background color used for selected days and UI elements.

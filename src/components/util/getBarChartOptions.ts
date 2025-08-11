@@ -1,4 +1,4 @@
-import { DataResponse, Measure } from '@embeddable.com/core';
+import { DataResponse, DimensionOrMeasure, Measure } from '@embeddable.com/core';
 import { ChartDataset, ChartOptions } from 'chart.js';
 import { Chart } from 'chart.js';
 
@@ -12,6 +12,7 @@ type ExtendedChartDataset = ChartDataset<'bar' | 'line'> & {
   totals?: { [key: string]: { total: number; lastSegment: number | null } };
   xAxisNames?: string[];
 };
+
 
 const getPadding = (
   showLabels: boolean,
@@ -70,10 +71,26 @@ export default function getBarChartOptions({
   impression = false,
   performance = false,
   optimization = false,
+  TrolleyBar = false,
+  MarketingActivities = false,
+  InstoreDuration2 = false,
+  TrolleyUsage = false,
+  Profitability = false,
+  Profitability2 = false,
+  GeneralKPIs = false,
+  overview = false,
+  edeka = false,
+  Despar = false,
+  master = false,
+  MasterLines = false,
+  MasterRetail = false,
+  masterUplift = false,
+  InstoreDuration = false,
   Totalperformance = false,
-  KPIvalue
+  KPIvalue,
+  AbsolutePercentage = false,
 }: Partial<Props> & {
-  lineMetrics?: Measure[];
+  lineMetrics?: DimensionOrMeasure[];
   metric?: Measure;
   metrics?: Measure[];
   results?: DataResponse;
@@ -93,12 +110,42 @@ export default function getBarChartOptions({
   impression?: boolean;
   performance?: boolean;
   optimization?: boolean;
+  TrolleyBar?: boolean;
+  MarketingActivities?: boolean;
+  Profitability?: boolean;
+  Profitability2?: boolean;
+  GeneralKPIs?: boolean;
+  InstoreDuration2?: boolean
+  TrolleyUsage?: boolean
+  overview?: boolean;
+  edeka?: boolean;
+  master?: boolean;
+  Despar?: boolean;
+  masterUplift?: boolean;
   Totalperformance?: boolean;
-  KPIvalue?: string
+  KPIvalue?: string;
+  AbsolutePercentage?: boolean;
+  MasterLines?: boolean;
+  InstoreDuration?: boolean;
+
+  MasterRetail?: boolean
 
 }): ChartOptions<'bar' | 'line'> {
   const displayedMonths = new Set();
   const displayedYears = new Set();
+  const displayedQuarters = new Set();
+
+  const monthCounts = new Map<string, number>();
+  if (results?.data && (xAxis === 'receipts_retail.date' || xAxis === 'customer_journeys.date' || xAxis === 'overview.date')) {
+    results.data.forEach(item => {
+      const dateObj = new Date(item[xAxis]);
+      if (!isNaN(dateObj.getTime())) {
+        const key = `${dateObj.getFullYear()}-${dateObj.getMonth()}`;
+        monthCounts.set(key, (monthCounts.get(key) || 0) + 1);
+      }
+    });
+  }
+
   return {
     responsive: true,
     maintainAspectRatio: false,
@@ -111,11 +158,14 @@ export default function getBarChartOptions({
         display: displayYaxis,
         stacked: stacked || stackMetrics,
         grace: '0%',
+        position: 'left',
         grid: {
           display: false
         },
+
         max:
-          displayAsPercentage && !displayHorizontally
+          AbsolutePercentage && !displayHorizontally
+
             ? stackMetrics
               ? 120 // When both displayAsPercentage and stackMetrics are true
               : isGroupedBar
@@ -178,9 +228,9 @@ export default function getBarChartOptions({
 
         title: {
           display: !!yAxisTitle,
-          text: yAxisTitle,
+          text: yAxisTitle === 'Impressions' && AbsolutePercentage ? 'Impressions (%)' : yAxisTitle,
           font: {
-            size: 14
+            size: 13
           },
         },
       },
@@ -189,7 +239,9 @@ export default function getBarChartOptions({
 
         //optional second y-axis for optional line metrics
 
-        display: showSecondYAxis,
+        display: (xAxis === 'receipts_retail.date' || xAxis === 'customer_journeys.date' || xAxis === 'overview.date') ? false : showSecondYAxis,
+
+
         grace: '0%',
         grid: {
           display: false,
@@ -200,10 +252,6 @@ export default function getBarChartOptions({
             const maxY = this.chart.scales.y1.max;
             const minY = this.chart.scales.y1.min;
 
-            // Skip rendering ticks during animation if the scale is clearly wrong
-            if (Math.abs(maxY - minY) < 10 && maxY < 5000) {
-              return '';
-            }
 
             // Determine formatting type
             let unit = '';
@@ -239,6 +287,9 @@ export default function getBarChartOptions({
 
           display: !!secondAxisTitle,
           text: secondAxisTitle,
+          font: {
+            size: 13
+          },
         },
         afterDataLimits: function (axis) {
           //Disable fractions unless they exist in the data.
@@ -296,42 +347,53 @@ export default function getBarChartOptions({
           //https://www.chartjs.org/docs/latest/axes/labelling.html
 
           callback: function (value) {
+
             const full = this.getLabelForValue(parseFloat(`${value}`)); // e.g. "30 Sep"
+            const MIN_POINTS_PER_MONTH = 5;
             // In your ticks callback:
-            if (xAxis === 'receipts_retail.month') {
+            if (xAxis === 'receipts_retail.month' || xAxis === 'customer_journeys.month1' || xAxis === 'overview.month1') {
               const [month, year] = full.split(' ');
               return month.substring(0, 3);
             }
 
-            if (xAxis === 'receipts_retail.date') {
+            if (xAxis === 'big_dm.date') {
+              const date = new Date(full);
+              if (isNaN(date.getTime())) return full;
+              return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); // "Mar 20"
+            }
+            if (xAxis === 'big_dm.week') {
+              // If `full` is just the week number, return "Week 12"
+              return `Week ${full}`;
+            }
+
+            if (xAxis === 'receipts_retail.date' || xAxis === 'customer_journeys.date' || xAxis === 'overview.date') {
               const dateObj = new Date(full);
-              if (isNaN(dateObj.getTime())) return full; // Fallback for invalid dates
+              if (isNaN(dateObj.getTime())) return full;
 
               const year = dateObj.getFullYear();
-              const month = dateObj.getMonth(); // 0 (Jan) to 11 (Dec)
-
-              // Create a unique key for this month (e.g., "2023-0" for January 2023)
+              const month = dateObj.getMonth();
               const monthKey = `${year}-${month}`;
 
-              // Skip if this month was already displayed
-              if (displayedMonths.has(monthKey)) {
+              // Check if the month has enough data
+              if ((monthCounts.get(monthKey) || 0) < MIN_POINTS_PER_MONTH) {
+                return null; // Skip rendering this month
+              }
+
+              if (displayedQuarters.has(monthKey)) {
                 return null;
               }
 
-              // Mark this month as displayed
-              displayedMonths.add(monthKey);
+              displayedQuarters.add(monthKey);
 
-              // Format as "1 Jan 2023" (showing the first of each month)
-              const monthStartDate = new Date(year, month, 1);
-              const formattedDate = monthStartDate.toLocaleDateString('en-GB', {
-                day: 'numeric',
+              // Format date as "Sep 2025"
+              const formattedDate = new Date(year, month, 1).toLocaleDateString('en-GB', {
                 month: 'short',
                 year: 'numeric'
               }).replace(/ /g, ' ');
 
-              return '          ' + formattedDate; // regular spaces (not as reliable)
-
+              return '          ' + formattedDate;
             }
+
             if (granularity === 'day') {
               return full.split(' ')[0]; // "30"
             }
@@ -347,7 +409,7 @@ export default function getBarChartOptions({
               return [`Week ${weekNumber}`, `${date} to ${date2}`];  // <<=== RETURN ARRAY!
             }
 
-            if (full.length > 15) {
+            if ((full.length > 15) && (Totalperformance)) {
               // Split the label by spaces
               const words = full.split(' ');
 
@@ -408,7 +470,17 @@ export default function getBarChartOptions({
     plugins: {
 
 
-      drawYearLabelsPlugin: { active: xAxis === 'receipts_retail.month' },
+      drawYearLabelsPlugin: {
+        active: xAxis === 'receipts_retail.month' || xAxis === 'customer_journeys.month1' || xAxis === 'overview.month1'
+      },
+
+      // In the plugins section of getBarChartOptions, add:
+      stringMetric: {
+        enabled: xAxis === 'big_dm.weather_bins' || xAxis === 'big_dm.weather_feels_bins' || xAxis === 'big_dm.name_market_type'
+          || xAxis === 'big_dm.rain_bool' || xAxis === 'big_dm.snow_bool', // or whatever condition you want to activate it
+        metrics: metrics, // pass the metrics
+        rawData: results?.data // pass the raw data
+      },
 
 
 
@@ -416,7 +488,6 @@ export default function getBarChartOptions({
       monthHeader: { active: granularity === 'day' },
       dateHeader: { active: granularity === 'total' },
       legend: {
-
         display: showLegend,
         position: 'bottom',
         labels: {
@@ -430,24 +501,41 @@ export default function getBarChartOptions({
           generateLabels: function (chart) {
             const original = Chart.defaults.plugins.legend.labels.generateLabels(chart);
             const labelMap = {
-              'Total Frequency': 'Frequency',
-              'Total Sale': 'Sales vs Revenue',
-              'Total revenue': 'Sales vs Revenue',
+              'Total Frequency': 'Shoppers (Amount)',
               'Without C.A.P': 'Without C.A.P.',
               'With C.A.P': 'With C.A.P.',
               'Sales Uplift (No Negative)': 'Sales Uplift',
               'SP CR Uplift Positive': 'Conversion Uplift',
-
-
+              'Sum Frequency No Device': 'Without Trolley',
+              'Sum Frequency Trolley': 'With Trolley',
+              'Average Frequency No Device Hourly': 'Without Trolley',
+              'Average Frequency Trolley Hourly': 'With Trolley',
+              'Average Frequency No Device Weekly': 'Without Trolley',
+              'Average Frequency Trolley Weekly': 'With Trolley',
+              'Sum Revenue No Device': 'Without Trolley',
+              'Sum Revenue Trolley': 'With Trolley',
+              'Sum Sales No Device': 'Without Trolley',
+              'Sum Sales Trolley': 'With Trolley',
+              'Average Sales No Device Hourly': 'Without Trolley',
+              'Average Sales Trolley Hourly': 'With Trolley',
+              'Average Sales No Device Weekly': 'Without Trolley',
+              'Average Sales Trolley Weekly': 'With Trolley',
+              'Average Revenue No Device Hourly': 'Without Trolley',
+              'Average Revenue Trolley Hourly': 'With Trolley',
+              'Average Revenue No Device Weekly': 'Without Trolley',
+              'Average Revenue Trolley Weekly': 'With Trolley',
             };
-            return original.map(label => ({
+
+            const mapped = original.map(label => ({
               ...label,
-              text: labelMap[label.text] || label.text // Use mapped text if available, otherwise keep original
+              text: labelMap[label.text] || label.text
             }));
+
+            return (xAxis === 'receipts_retail.hour' && GeneralKPIs) || xAxis === 'receipts_retail.date' || xAxis === 'customer_journeys.dow' || xAxis === 'customer_journeys.month1' ? mapped.reverse() : mapped;
           }
-          // Adjust padding between legend items
         },
       },
+
       tooltip: {
         enabled: false,
         external: function (context) {
@@ -495,13 +583,21 @@ export default function getBarChartOptions({
           let value = formatValue(parsed[axis], {
             type: 'number',
             dps: dps,
-            meta: displayAsPercentage ? undefined : metricObj?.meta,
-          });
+            meta: displayAsPercentage ? undefined : metricObj?.meta
+          }, Despar);
 
           if (displayAsPercentage) value += '%';
 
           let innerHTML = '';
           const weekdayMap = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+          // Function to replace CLP$ with € if MasterRetail is true
+          const formatCurrency = (text) => {
+            if (MasterRetail) {
+              return text.replace(/CLP\$/g, '€');
+            }
+            return text;
+          };
 
 
 
@@ -519,13 +615,13 @@ export default function getBarChartOptions({
               const fifthMetric = metricsList[7];
 
               const fifthMetricValue = fifthMetric && results?.data?.[mappedIndex]?.[fifthMetric.name] !== undefined
-                ? formatValue(results.data[mappedIndex][fifthMetric.name], { type: 'number', dps: dps })
+                ? formatValue(results.data[mappedIndex][fifthMetric.name], { type: 'number', dps: dps }, Despar)
                 : 'N/A';
 
               const sixthMetric = metricsList[6];
 
               const sixthMetricValue = sixthMetric && results?.data?.[mappedIndex]?.[sixthMetric.name] !== undefined
-                ? formatValue(results.data[mappedIndex][sixthMetric.name], { type: 'number', dps: dps })
+                ? formatValue(results.data[mappedIndex][sixthMetric.name], { type: 'number', dps: dps }, Despar)
                 : 'N/A';
 
 
@@ -603,22 +699,22 @@ export default function getBarChartOptions({
               const dataIndex = labelCtx.dataIndex; // index of the hovered bar
               const fifthMetric = metricsList[8]; // 5th metric in the list
               const fifthMetricValue = fifthMetric && results?.data?.[dataIndex]?.[fifthMetric.name] !== undefined
-                ? formatValue(results.data[dataIndex][fifthMetric.name], { type: 'number', dps: dps })
+                ? formatValue(results.data[dataIndex][fifthMetric.name], { type: 'number', dps: dps }, Despar)
                 : 'N/A';
 
               const sixthMetric = metricsList[6]; // 5th metric in the list
               const sixthMetricValue = sixthMetric && results?.data?.[dataIndex]?.[sixthMetric.name] !== undefined
-                ? formatValue(results.data[dataIndex][sixthMetric.name], { type: 'number', dps: dps })
+                ? formatValue(results.data[dataIndex][sixthMetric.name], { type: 'number', dps: dps }, Despar)
                 : 'N/A';
 
               const seventhMetric = metricsList[7]; // 5th metric in the list
               const seventhMetricValue = seventhMetric && results?.data?.[dataIndex]?.[seventhMetric.name] !== undefined
-                ? formatValue(results.data[dataIndex][seventhMetric.name], { type: 'number', dps: dps })
+                ? formatValue(results.data[dataIndex][seventhMetric.name], { type: 'number', dps: dps }, Despar)
                 : 'N/A';
 
               const ninthMetric = metricsList[9]; // 5th metric in the list
               const ninthMetricValue = ninthMetric && results?.data?.[dataIndex]?.[ninthMetric.name] !== undefined
-                ? formatValue(results.data[dataIndex][ninthMetric.name], { type: 'number', dps: dps })
+                ? formatValue(results.data[dataIndex][ninthMetric.name], { type: 'number', dps: dps }, Despar)
                 : 'N/A';
 
 
@@ -727,12 +823,12 @@ export default function getBarChartOptions({
               const dataIndex = labelCtx.dataIndex; // index of the hovered bar
               const fifthMetric = metricsList[7]; // 5th metric in the list
               const fifthMetricValue = fifthMetric && results?.data?.[dataIndex]?.[fifthMetric.name] !== undefined
-                ? formatValue(results.data[dataIndex][fifthMetric.name], { type: 'number', dps: dps })
+                ? formatValue(results.data[dataIndex][fifthMetric.name], { type: 'number', dps: dps }, Despar)
                 : 'N/A';
 
               const sixthMetric = metricsList[6]; // 5th metric in the list
               const sixthMetricValue = sixthMetric && results?.data?.[dataIndex]?.[sixthMetric.name] !== undefined
-                ? formatValue(results.data[dataIndex][sixthMetric.name], { type: 'number', dps: dps })
+                ? formatValue(results.data[dataIndex][sixthMetric.name], { type: 'number', dps: dps }, Despar)
                 : 'N/A';
 
 
@@ -803,6 +899,60 @@ export default function getBarChartOptions({
    `;
               }
 
+
+            }
+
+            else if (xAxis?.name === 'big_dm.name_market_type') {
+              const dataIndex = labelCtx.dataIndex;
+
+              const fifthMetric = metricsList[5];
+              const fifthMetricValue = fifthMetric && results?.data?.[dataIndex]?.[fifthMetric.name]
+              if (label === 'With C.A.P.') {
+                let xVal = titleLines[0].split(' ').slice(0, 2).join(' ');
+
+                innerHTML = `
+            <div>Analysis Group <strong style="color:#AF3241">${fifthMetricValue}</strong></div>
+    <div style="margin-top: 8px;">In <strong style="color:#AF3241">${xVal},</strong> Conversion <strong style="color:#AF3241">With C.A.P.</strong> is <strong style="color:#AF3241">${value}%</strong></div>
+  `;
+              }
+
+              else if (label === 'Without C.A.P.') {
+                let xVal = titleLines[0].split(' ').slice(0, 2).join(' ');
+
+                innerHTML = `
+            <div>Analysis Group <strong style="color:#AF3241">${fifthMetricValue}</strong></div>
+    <div style="margin-top: 8px;">In <strong style="color:#62626E">${xVal},</strong> Conversion <strong style="color:#62626E">Without C.A.P.</strong> is <strong style="color:#62626E">${value}%</strong></div>
+  `;
+              }
+
+              if (label === 'With C.A.P') {
+                let xVal = titleLines[0].split(' ').slice(0, 2).join(' ');
+
+                innerHTML = `
+            <div>Analysis Group <strong style="color:#AF3241">${fifthMetricValue}</strong></div>
+    <div style="margin-top: 8px;">In <strong style="color:#AF3241">${xVal},</strong> Average Basket Size <strong style="color:#AF3241">With C.A.P.</strong> is <strong style="color:#AF3241">${value}</strong></div>
+  `;
+              }
+
+              else if (label === 'Without C.A.P') {
+                let xVal = titleLines[0].split(' ').slice(0, 2).join(' ');
+
+                innerHTML = `
+            <div>Analysis Group <strong style="color:#AF3241">${fifthMetricValue}</strong></div>
+    <div style="margin-top: 8px;">In <strong style="color:#62626E">${xVal},</strong> Average Basket Size <strong style="color:#62626E">Without C.A.P.</strong> is <strong style="color:#62626E">${value}</strong></div>
+  `;
+              }
+
+              else if (label === 'Sales Uplift (No Negative)') {
+                let xVal = titleLines[0].split(' ').slice(0, 2).join(' ');
+
+                innerHTML = `
+            <div>Analysis Group <strong style="color:#AF3241">${fifthMetricValue}</strong></div>
+
+
+                  <div  style="margin-top: 8px;"> In <strong style = "color:#AF3241"> ${xVal} </strong>, Sales Uplift is <strong style="color:#AF3241">${value}%</strong></div>
+                    `;
+              }
 
             }
 
@@ -883,32 +1033,53 @@ export default function getBarChartOptions({
           else if (performance && granularity && titleLines.length && bodyLines.length) {
             const xVal = titleLines[0].split(' ').slice(0, 2).join(' ');
             const dataIndex = labelCtx.dataIndex;
-            const fifthMetric = metricsList[2];
 
+            const fifthMetric = metricsList[2];
             const fifthMetricValue = fifthMetric && results?.data?.[dataIndex]?.[fifthMetric.name] !== undefined
-              ? formatValue(results.data[dataIndex][fifthMetric.name], { type: 'number', dps: dps })
+              ? formatValue(results.data[dataIndex][fifthMetric.name], { type: 'number', dps: dps }, Despar)
               : 'N/A';
 
             const sixthMetric = metricsList[2];
-
             const sixthMetricValue = sixthMetric && results?.data?.[dataIndex]?.[sixthMetric.name] !== undefined
-              ? formatValue(results.data[dataIndex][sixthMetric.name], { type: 'number', dps: dps })
+              ? formatValue(results.data[dataIndex][sixthMetric.name], { type: 'number', dps: dps }, Despar)
               : 'N/A';
+
+            const fourthMetric = metricsList[4];
+            const fourthMetricValue = fourthMetric && results?.data?.[dataIndex]?.[fourthMetric.name] !== undefined
+              ? formatValue(results.data[dataIndex][fourthMetric.name], { type: 'number', dps: dps }, Despar)
+              : 'N/A';
+
+            const thirdMetric = metricsList[3];
+            const thirdMetricValue = thirdMetric && results?.data?.[dataIndex]?.[thirdMetric.name] !== undefined
+              ? formatValue(results.data[dataIndex][thirdMetric.name], { type: 'number', dps: dps }, Despar)
+              : 'N/A';
+
+            const thirdRounded = !isNaN(Number(thirdMetricValue)) ? Math.round(Number(thirdMetricValue)) : thirdMetricValue;
+            const fourthRounded = !isNaN(Number(fourthMetricValue)) ? Math.round(Number(fourthMetricValue)) : fourthMetricValue;
 
 
             if (label === 'Without C.A.P.') {
               const upliftColor = fifthMetricValue >= 0 ? '#00aa00' : '#F04B55';
               const upliftPrefix = fifthMetricValue >= 0 ? '+' : '';
               const upliftLine = fifthMetricValue != null
-
                 ? `<div style="margin-top: 8px;">Conversion Uplift is <strong style="color:${upliftColor}">${upliftPrefix}${Math.round(fifthMetricValue)}% Uplift</strong></div>`
                 : '';
+
+              let masterLines = '';
+              if (master) {
+                masterLines = `
+        <div style="margin-top: 8px;"><strong style="color:#AF3241">With C.A.P.</strong> every <strong style="color:#AF3241">${thirdRounded}th</strong> shopper converted.</div>
+        <div style="margin-top: 8px;"><strong style="color:#62626E">Without C.A.P.</strong> every <strong style="color:#62626E">${fourthRounded}th</strong> shopper converted.</div>
+      `;
+              }
 
               innerHTML = `
       <div>In <strong style="color:#62626E">${xVal}</strong>, Conversion Rate <strong style="color:#62626E">without C.A.P.</strong> is <strong style="color:#62626E">${value}%</strong></div>
       ${upliftLine}
-      `;
+      ${masterLines}
+    `;
             }
+
 
             else if (label === 'With C.A.P.') {
               const upliftColor = sixthMetricValue >= 0 ? '#00aa00' : '#F04B55';
@@ -917,9 +1088,18 @@ export default function getBarChartOptions({
                 ? `<div style="margin-top: 8px;">Conversion Uplift is <strong style="color:${upliftColor}">${upliftPrefix}${Math.round(sixthMetricValue)}% Uplift</strong></div>`
                 : '';
 
+              let masterLines = '';
+              if (master) {
+                masterLines = `
+        <div style="margin-top: 8px;"><strong style="color:#AF3241">With C.A.P.</strong> every <strong style="color:#AF3241">${thirdRounded}th</strong> shopper converted.</div>
+        <div style="margin-top: 8px;"><strong style="color:#62626E">Without C.A.P.</strong> every <strong style="color:#62626E">${fourthRounded}th</strong> shopper converted.</div>
+      `;
+              }
+
               innerHTML = `
       <div>In <strong style="color:#AF3241">${xVal}</strong>, Conversion Rate <strong style="color:#AF3241">with C.A.P.</strong> is <strong style="color:#AF3241">${value}%</strong></div>
       ${upliftLine}
+      ${masterLines}
       `;
             }
 
@@ -1021,126 +1201,966 @@ export default function getBarChartOptions({
 
           }
 
-          else if (xAxis === 'receipts_retail.dow') {
+          else if (xAxis === 'customer_journeys.duration_group_five') {
             const xVal = titleLines[0].split(' ').slice(0, 2).join(' ');
 
-            if (KPIvalue === "Sales (Units)") {
+
+            if (KPIvalue === "Average Sales (Units)") {
               console.log(metricObj?.name)
-              if (metricObj?.name === "receipts_retail.sum_sale") {
+              if (metricObj?.name === "customer_journeys.average_sales") {
                 innerHTML = `
-                  <div><strong style="color:#AF3241">${value}</strong> Sales Units were generated in the store on <strong style="color:#AF3241">${xVal}</strong></div>
+                  <div>On average, Shoppers who spent <strong style="color:#AF3241">${xVal} minutes</strong> in the store also spent <strong style="color:#AF3241">${value}</strong> units</div>
                   `;
               }
-              else {
+              else if (metricObj?.name === "customer_journeys.average_revenue") {
                 innerHTML = `
-                  <div><strong style="color:#AF3241">${value}</strong> shoppers visited the store on <strong style="color:#AF3241">${xVal}</strong></div>
+                  <div><strong style="color:#AF3241">${value}</strong> shoppers spent <strong style="color:#AF3241">${xVal} minutes</strong> in the store</div>
                   `;
               }
 
             }
 
-            else if (KPIvalue === "Revenue (CLP$)") {
-              if (metricObj?.name === "receipts_retail.sum_revenue") {
-                innerHTML =
-                  `
-                  <div><strong style="color:#AF3241">${value}</strong> shoppers visited the store on <strong style="color:#AF3241">${xVal}</strong></div>
+            else if (KPIvalue === formatCurrency('Average Revenue (CLP$)')) {
+              console.log(metricObj?.name)
+              if (metricObj?.name === "customer_journeys.average_sales") {
+                innerHTML = `
+                  <div>On average, Shoppers who spent <strong style="color:#AF3241">${xVal} minutes</strong> in the store also spent <strong style="color:#AF3241">CLP$${value}</strong></div>
+                  `;
+              }
+              else if (metricObj?.name === "customer_journeys.average_revenue") {
+                innerHTML = `
+                  <div><strong style="color:#AF3241">${value}</strong> shoppers spent <strong style="color:#AF3241">${xVal} minutes</strong> in the store</div>
+                  `;
+              }
+
+            }
+
+            else if (KPIvalue === "Average Shopper") {
+              console.log(metricObj?.name)
+              innerHTML = `
+                  <div><strong style="color:#AF3241">${value}</strong> shoppers spent <strong style="color:#AF3241">${xVal} minutes</strong> in the store</div>
                   `;
 
-              }
-              else {
-                innerHTML = `
-                  <div><strong style="color:#AF3241">${value}</strong> Revenue (CLP$) were generated in the store on <strong style="color:#AF3241">${xVal}</strong></div>
+
+            }
+
+            else if (KPIvalue === "Average Shopper (in %)") {
+              console.log(metricObj?.name)
+              innerHTML = `
+                  <div><strong style="color:#AF3241">${value}%</strong> shoppers spent <strong style="color:#AF3241">${xVal} minutes</strong> in the store</div>
                   `;
+
+
+            }
+
+          }
+
+          else if (xAxis === 'customer_journeys.duration_group_ten') {
+            const xVal = titleLines[0].split(' ').slice(0, 2).join(' ');
+
+
+            if (KPIvalue === "Average Sales (Units)") {
+              console.log(metricObj?.name)
+              if (metricObj?.name === "customer_journeys.average_sales") {
+                innerHTML = `
+                  <div>On average, Shoppers who spent <strong style="color:#AF3241">${xVal} minutes</strong> in the store also spent <strong style="color:#AF3241">${value}</strong> units</div>
+                  `;
+              }
+              else if (metricObj?.name === "customer_journeys.average_revenue") {
+                innerHTML = `
+                  <div><strong style="color:#AF3241">${value}</strong> shoppers spent <strong style="color:#AF3241">${xVal} minutes</strong> in the store</div>
+                  `;
+              }
+
+            }
+
+            else if (KPIvalue === formatCurrency('Average Revenue (CLP$)')) {
+              console.log(metricObj?.name)
+              if (metricObj?.name === "customer_journeys.average_sales") {
+                innerHTML = `
+                  <div>On average, Shoppers who spent <strong style="color:#AF3241">${xVal} minutes</strong> in the store also spent <strong style="color:#AF3241">CLP$${value}</strong></div>
+                  `;
+              }
+              else if (metricObj?.name === "customer_journeys.average_revenue") {
+                innerHTML = `
+                  <div><strong style="color:#AF3241">${value}</strong> shoppers spent <strong style="color:#AF3241">${xVal} minutes</strong> in the store</div>
+                  `;
+              }
+
+            }
+
+            else if (KPIvalue === "Average Shopper") {
+              console.log(metricObj?.name)
+              innerHTML = `
+                  <div><strong style="color:#AF3241">${value}</strong> shoppers spent <strong style="color:#AF3241">${xVal} minutes</strong> in the store</div>
+                  `;
+
+
+            }
+
+            else if (KPIvalue === "Average Shopper (in %)") {
+              console.log(metricObj?.name)
+              innerHTML = `
+                  <div><strong style="color:#AF3241">${value}%</strong> shoppers spent <strong style="color:#AF3241">${xVal} minutes</strong> in the store</div>
+                  `;
+
+
+            }
+
+          }
+
+          else if (xAxis === 'customer_journeys.duration_group_fifteen') {
+            const xVal = titleLines[0].split(' ').slice(0, 2).join(' ');
+
+
+            if (KPIvalue === "Average Sales (Units)") {
+              console.log(metricObj?.name)
+              if (metricObj?.name === "customer_journeys.average_sales") {
+                innerHTML = `
+                  <div>On average, Shoppers who spent <strong style="color:#AF3241">${xVal} minutes</strong> in the store also spent <strong style="color:#AF3241">${value}</strong> units</div>
+                  `;
+              }
+              else if (metricObj?.name === "customer_journeys.average_revenue") {
+                innerHTML = `
+                  <div><strong style="color:#AF3241">${value}</strong> shoppers spent <strong style="color:#AF3241">${xVal} minutes</strong> in the store</div>
+                  `;
+              }
+
+            }
+
+            else if (KPIvalue === formatCurrency('Average Revenue (CLP$)')) {
+              console.log(metricObj?.name)
+              if (metricObj?.name === "customer_journeys.average_sales") {
+                innerHTML = `
+                  <div>On average, Shoppers who spent <strong style="color:#AF3241">${xVal} minutes</strong> in the store also spent <strong style="color:#AF3241">CLP$${value}</strong></div>
+                  `;
+              }
+              else if (metricObj?.name === "customer_journeys.average_revenue") {
+                innerHTML = `
+                  <div><strong style="color:#AF3241">${value}</strong> shoppers spent <strong style="color:#AF3241">${xVal} minutes</strong> in the store</div>
+                  `;
+              }
+
+            }
+
+            else if (KPIvalue === "Average Shopper") {
+              console.log(metricObj?.name)
+              innerHTML = `
+                  <div><strong style="color:#AF3241">${value}</strong> shoppers spent <strong style="color:#AF3241">${xVal} minutes</strong> in the store</div>
+                  `;
+
+
+            }
+
+            else if (KPIvalue === "Average Shopper (in %)") {
+              console.log(metricObj?.name)
+              innerHTML = `
+                  <div><strong style="color:#AF3241">${value}%</strong> shoppers spent <strong style="color:#AF3241">${xVal} minutes</strong> in the store</div>
+                  `;
+
+
+            }
+
+          }
+
+
+          else if (xAxis === 'customer_journeys.duration_group_thirty') {
+            const xVal = titleLines[0].split(' ').slice(0, 2).join(' ');
+
+
+            if (KPIvalue === "Average Sales (Units)") {
+              console.log(metricObj?.name)
+              if (metricObj?.name === "customer_journeys.average_sales") {
+                innerHTML = `
+                  <div>On average, Shoppers who spent <strong style="color:#AF3241">${xVal} minutes</strong> in the store also spent <strong style="color:#AF3241">${value}</strong> units</div>
+                  `;
+              }
+              else if (metricObj?.name === "customer_journeys.average_revenue") {
+                innerHTML = `
+                  <div><strong style="color:#AF3241">${value}</strong> shoppers spent <strong style="color:#AF3241">${xVal} minutes</strong> in the store</div>
+                  `;
+              }
+
+            }
+
+            else if (KPIvalue === formatCurrency('Average Revenue (CLP$)')) {
+              console.log(metricObj?.name)
+              if (metricObj?.name === "customer_journeys.average_sales") {
+                innerHTML = `
+                  <div>On average, Shoppers who spent <strong style="color:#AF3241">${xVal} minutes</strong> in the store also spent <strong style="color:#AF3241">CLP$${value}</strong></div>
+                  `;
+              }
+              else if (metricObj?.name === "customer_journeys.average_revenue") {
+                innerHTML = `
+                  <div><strong style="color:#AF3241">${value}</strong> shoppers spent <strong style="color:#AF3241">${xVal} minutes</strong> in the store</div>
+                  `;
+              }
+
+            }
+
+            else if (KPIvalue === "Average Shopper") {
+              console.log(metricObj?.name)
+              innerHTML = `
+                  <div><strong style="color:#AF3241">${value}</strong> shoppers spent <strong style="color:#AF3241">${xVal} minutes</strong> in the store</div>
+                  `;
+
+
+            }
+
+            else if (KPIvalue === "Average Shopper (in %)") {
+              console.log(metricObj?.name)
+              innerHTML = `
+                  <div><strong style="color:#AF3241">${value}%</strong> shoppers spent <strong style="color:#AF3241">${xVal} minutes</strong> in the store</div>
+                  `;
+
+
+            }
+
+          }
+
+
+          else if (xAxis === 'customer_journeys.duration_group_sixty') {
+            const xVal = titleLines[0].split(' ').slice(0, 2).join(' ');
+
+
+            if (KPIvalue === "Average Sales (Units)") {
+              console.log(metricObj?.name)
+              if (metricObj?.name === "customer_journeys.average_sales") {
+                innerHTML = `
+                  <div>On average, Shoppers who spent <strong style="color:#AF3241">${xVal} minutes</strong> in the store also spent <strong style="color:#AF3241">${value}</strong> units</div>
+                  `;
+              }
+              else if (metricObj?.name === "customer_journeys.average_revenue") {
+                innerHTML = `
+                  <div><strong style="color:#AF3241">${value}</strong> shoppers spent <strong style="color:#AF3241">${xVal} minutes</strong> in the store</div>
+                  `;
+              }
+
+            }
+
+            else if (KPIvalue === formatCurrency('Average Revenue (CLP$)')) {
+              console.log(metricObj?.name)
+              if (metricObj?.name === "customer_journeys.average_sales") {
+                innerHTML = `
+                  <div>On average, Shoppers who spent <strong style="color:#AF3241">${xVal} minutes</strong> in the store also spent <strong style="color:#AF3241">CLP$${value}</strong></div>
+                  `;
+              }
+              else if (metricObj?.name === "customer_journeys.average_revenue") {
+                innerHTML = `
+                  <div><strong style="color:#AF3241">${value}</strong> shoppers spent <strong style="color:#AF3241">${xVal} minutes</strong> in the store</div>
+                  `;
+              }
+
+            }
+
+            else if (KPIvalue === "Average Shopper") {
+              console.log(metricObj?.name)
+              innerHTML = `
+                  <div><strong style="color:#AF3241">${value}</strong> shoppers spent <strong style="color:#AF3241">${xVal} minutes</strong> in the store</div>
+                  `;
+
+
+            }
+
+            else if (KPIvalue === "Average Shopper (in %)") {
+              console.log(metricObj?.name)
+              innerHTML = `
+                  <div><strong style="color:#AF3241">${value}%</strong> shoppers spent <strong style="color:#AF3241">${xVal} minutes</strong> in the store</div>
+                  `;
+
+
+            }
+
+          }
+          else if (InstoreDuration2) {
+
+
+            if (xAxis === 'customer_journeys.dow') {
+              const xVal = titleLines[0].split(' ').slice(0, 2).join(' ');
+
+
+              if (KPIvalue === "Average Sales (Units)") {
+                console.log(metricObj?.name)
+                if (metricObj?.name === "customer_journeys.average_revenue") {
+                  innerHTML = `
+                  <div>on <strong style="color:#AF3241">${xVal}</strong>, The <strong style="color:#AF3241">Average Sales (Units)</strong> is <strong style="color:#AF3241">${value}</strong></div>
+                  `;
+                }
+                else if (metricObj?.name === "customer_journeys.average_sales") {
+                  innerHTML = `
+                  <div>on <strong style="color:#AF3241">${xVal}</strong>, The <strong style="color:#AF3241">Average Duration</strong> spent in a store is <strong style="color:#AF3241">${value}</strong> minutes</div>
+                  `;
+                }
+
+              }
+
+              else if (KPIvalue === formatCurrency('Average Revenue (CLP$)')) {
+                console.log(metricObj?.name)
+                if (metricObj?.name === "customer_journeys.average_revenue") {
+                  innerHTML = `
+                  <div>on <strong style="color:#AF3241">${xVal}</strong>, The <strong style="color:#AF3241">Average Revenue (CLP$)</strong> is <strong style="color:#AF3241">${value}</strong></div>
+                  `;
+                }
+                else if (metricObj?.name === "customer_journeys.average_sales") {
+                  innerHTML = `
+                  <div>on <strong style="color:#AF3241">${xVal}</strong>, The <strong style="color:#AF3241">Average Duration</strong> spent in a store is <strong style="color:#AF3241">${value}</strong> minutes</div>
+                  `;
+                }
+
+              }
+
+              else if (KPIvalue === "Average Duration") {
+                console.log(metricObj?.name)
+                innerHTML = `
+                  <div>on <strong style="color:#AF3241">${xVal}</strong>, The <strong style="color:#AF3241">Average Duration</strong> spent in a store is <strong style="color:#AF3241">${value}</strong> minutes</div>
+                  `;
+
+
+              }
+
+
+
+
+            }
+
+
+            else if (xAxis === 'customer_journeys.month1') {
+              const xVal = titleLines[0].split(' ').slice(0, 2).join(' ');
+
+
+              if (KPIvalue === "Average Sales (Units)") {
+                console.log(metricObj?.name)
+                if (metricObj?.name === "customer_journeys.average_revenue") {
+                  innerHTML = `
+                  <div>In <strong style="color:#AF3241">${xVal}</strong>, The <strong style="color:#AF3241">Average Sales (Units)</strong> is <strong style="color:#AF3241">${value}</strong></div>
+                  `;
+                }
+                else if (metricObj?.name === "customer_journeys.average_sales") {
+                  innerHTML = `
+                  <div>In <strong style="color:#AF3241">${xVal}</strong>, The <strong style="color:#AF3241">Average Duration</strong> spent in a store is <strong style="color:#AF3241">${value}</strong> minutes</div>
+                  `;
+                }
+
+              }
+
+              else if (KPIvalue === formatCurrency('Average Revenue (CLP$)')) {
+                console.log(metricObj?.name)
+                if (metricObj?.name === "customer_journeys.average_revenue") {
+                  innerHTML = `
+                  <div>In <strong style="color:#AF3241">${xVal}</strong>, The <strong style="color:#AF3241">Average Revenue (CLP$)</strong> is <strong style="color:#AF3241">${value}</strong></div>
+                  `;
+                }
+                else if (metricObj?.name === "customer_journeys.average_sales") {
+                  innerHTML = `
+                  <div>In <strong style="color:#AF3241">${xVal}</strong>, The <strong style="color:#AF3241">Average Duration</strong> spent in a store is <strong style="color:#AF3241">${value}</strong> minutes</div>
+                  `;
+                }
+
+              }
+
+              else if (KPIvalue === "Average Duration") {
+                console.log(metricObj?.name)
+                innerHTML = `
+                  <div>In <strong style="color:#AF3241">${xVal}</strong>, The <strong style="color:#AF3241">Average Duration</strong> spent in a store is <strong style="color:#AF3241">${value}</strong> minutes</div>
+                  `;
+
+
+              }
+
+            }
+
+
+            else if (xAxis === 'customer_journeys.hour') {
+              const xVal = titleLines[0].split(' ').slice(0, 2).join(' ');
+
+
+              if (KPIvalue === "Average Sales (Units)") {
+                console.log(metricObj?.name)
+                if (metricObj?.name === "customer_journeys.average_revenue") {
+                  innerHTML = `
+                  <div>At hour <strong style="color:#AF3241">${xVal}</strong>, The <strong style="color:#AF3241">Average Sales (Units)</strong> is <strong style="color:#AF3241">${value}</strong></div>
+                  `;
+                }
+                else if (metricObj?.name === "customer_journeys.average_sales") {
+                  innerHTML = `
+                  <div>At hour <strong style="color:#AF3241">${xVal}</strong>, The <strong style="color:#AF3241">Average Duration</strong> spent in a store is <strong style="color:#AF3241">${value}</strong> minutes</div>
+                  `;
+                }
+
+              }
+
+              else if (KPIvalue === formatCurrency('Average Revenue (CLP$)')) {
+                console.log(metricObj?.name)
+                if (metricObj?.name === "customer_journeys.average_revenue") {
+                  innerHTML = `
+                  <div>At hour <strong style="color:#AF3241">${xVal}</strong>, The <strong style="color:#AF3241">Average Revenue (CLP$)</strong> is <strong style="color:#AF3241">${value}</strong></div>
+                  `;
+                }
+                else if (metricObj?.name === "customer_journeys.average_sales") {
+                  innerHTML = `
+                  <div>At hour <strong style="color:#AF3241">${xVal}</strong>, The <strong style="color:#AF3241">Average Duration</strong> spent in a store is <strong style="color:#AF3241">${value}</strong> minutes</div>
+                  `;
+                }
+
+              }
+
+              else if (KPIvalue === "Average Duration") {
+                console.log(metricObj?.name)
+                innerHTML = `
+                  <div>At hour <strong style="color:#AF3241">${xVal}</strong>, The <strong style="color:#AF3241">Average Duration</strong> spent in a store is <strong style="color:#AF3241">${value}</strong> minutes</div>
+                  `;
+
+
+              }
+
+            }
+
+
+            else if (xAxis === 'customer_journeys.date') {
+              const isoString = titleLines[0];
+              const date = new Date(isoString);
+
+              const day = String(date.getDate()).padStart(2, '0');
+              const month = String(date.getMonth() + 1).padStart(2, '0'); // months are 0-indexed
+              const year = date.getFullYear();
+
+              const xVal = `${day}.${month}.${year}`;
+
+
+              if (KPIvalue === "Average Sales (Units)") {
+                console.log(metricObj?.name)
+                if (metricObj?.name === "customer_journeys.average_revenue") {
+                  innerHTML = `
+                  <div>On <strong style="color:#AF3241">${xVal}</strong>, The <strong style="color:#AF3241">Average Sales (Units)</strong> is <strong style="color:#AF3241">${value}</strong></div>
+                  `;
+                }
+                else if (metricObj?.name === "customer_journeys.average_sales") {
+                  innerHTML = `
+                  <div>On <strong style="color:#AF3241">${xVal}</strong>, The <strong style="color:#AF3241">Average Duration</strong> spent in a store is <strong style="color:#AF3241">${value}</strong> minutes</div>
+                  `;
+                }
+
+              }
+
+              else if (KPIvalue === formatCurrency('Average Revenue (CLP$)')) {
+                console.log(metricObj?.name)
+                if (metricObj?.name === "customer_journeys.average_revenue") {
+                  innerHTML = `
+                  <div>On <strong style="color:#AF3241">${xVal}</strong>, The <strong style="color:#AF3241">Average Revenue (CLP$)</strong> is <strong style="color:#AF3241">${value}</strong></div>
+                  `;
+                }
+                else if (metricObj?.name === "customer_journeys.average_sales") {
+                  innerHTML = `
+                  <div>On <strong style="color:#AF3241">${xVal}</strong>, The <strong style="color:#AF3241">Average Duration</strong> spent in a store is <strong style="color:#AF3241">${value}</strong> minutes</div>
+                  `;
+                }
+
+              }
+
+              else if (KPIvalue === "Average Duration") {
+                console.log(metricObj?.name)
+                innerHTML = `
+                  <div>On <strong style="color:#AF3241">${xVal}</strong>, The <strong style="color:#AF3241">Average Duration</strong> spent in a store is <strong style="color:#AF3241">${value}</strong> minutes</div>
+                  `;
+
+
               }
 
             }
           }
 
-          else if (xAxis === 'receipts_retail.month') {
-            const xVal = titleLines[0].split(' ').slice(0, 2).join(' ');
 
-            if (KPIvalue === "Sales (Units)") {
-              if (metricObj?.name === "receipts_retail.sum_sale") {
+          else if (TrolleyUsage) {
+            const dataIndex = labelCtx.dataIndex;
+
+            const fifthMetric = metricsList[5];
+            const fifthMetricValue = fifthMetric && results?.data?.[dataIndex]?.[fifthMetric.name]
+
+
+            if (label === 'Average Sales') {
+              if (xAxis === 'customer_journeys.hour') {
+                const xVal = titleLines[0].split(' ').slice(0, 2).join(' ');
                 innerHTML = `
-                  <div><strong style="color:#AF3241">${value}</strong> Sales Units were generated in the store in the month of <strong style="color:#AF3241">${xVal}</strong></div>
+                  <div>In ${fifthMetricValue} during hour <strong style="color:#AF3241">${xVal}, </strong>the <strong style="color:#AF3241">${KPIvalue}</strong> is <strong style="color:#AF3241">${value}</strong></div>
+                  <div style="margin-top: 8px; color:#62626e">Explanation: The average sales units as well as revenue in € only reflect the averages for shopper with a trolley.</div>
+                  
                   `;
+
               }
-              else {
+              else if (xAxis === 'customer_journeys.date') {
+                const isoString = titleLines[0];
+                const date = new Date(isoString);
+
+                const day = String(date.getDate()).padStart(2, '0');
+                const month = String(date.getMonth() + 1).padStart(2, '0'); // months are 0-indexed
+                const year = date.getFullYear();
+
+                const weekday = date.toLocaleDateString('en-US', { weekday: 'long' });
+
+                const xVal = `${day}.${month}.${year} (${weekday})`;
                 innerHTML = `
-                  <div><strong style="color:#AF3241">${value}</strong> shoppers visited the store in the month of <strong style="color:#AF3241">${xVal}</strong></div>
+                  <div>In ${fifthMetricValue} on <strong style="color:#AF3241">${xVal}, </strong>the <strong style="color:#AF3241">${KPIvalue}</strong> is <strong style="color:#AF3241">${value}</strong></div>
+                  <div style="margin-top: 8px; color:#62626e">Explanation: The average sales units as well as revenue in € only reflect the averages for shopper with a trolley.</div>
+                  
                   `;
+
+              }
+              else if (xAxis === 'customer_journeys.dow') {
+                const xVal = titleLines[0].split(' ').slice(0, 2).join(' ');
+                innerHTML = `
+                  <div>In ${fifthMetricValue} on <strong style="color:#AF3241">${xVal}, </strong>the <strong style="color:#AF3241">${KPIvalue}</strong> is <strong style="color:#AF3241">${value}</strong></div>
+                  <div style="margin-top: 8px; color:#62626e">Explanation: The average sales units as well as revenue in € only reflect the averages for shopper with a trolley.</div>
+                  
+                  `;
+
+              }
+              else if (xAxis === 'customer_journeys.month1') {
+                const xVal = titleLines[0].split(' ').slice(0, 2).join(' ');
+                innerHTML = `
+                  <div>In ${fifthMetricValue} in <strong style="color:#AF3241">${xVal}, </strong>the <strong style="color:#AF3241">${KPIvalue}</strong> is <strong style="color:#AF3241">${value}</strong></div>
+                  <div style="margin-top: 8px; color:#62626e">Explanation: The average sales units as well as revenue in € only reflect the averages for shopper with a trolley.</div>
+                  
+                  `;
+
+              }
+
+
+            }
+            else if (label === 'Average Revenue') {
+              if (xAxis === 'customer_journeys.hour') {
+                const xVal = titleLines[0].split(' ').slice(0, 2).join(' ');
+                innerHTML = `
+                  <div>In ${fifthMetricValue} during hour <strong style="color:#AF3241">${xVal}, </strong>the <strong style="color:#AF3241">${KPIvalue}</strong> is <strong style="color:#AF3241">${value}</strong></div>
+                  <div style="margin-top: 8px; color:#62626e">Explanation: The average sales units as well as revenue in € only reflect the averages for shopper with a trolley.</div>
+                  
+                  `;
+
+              }
+              else if (xAxis === 'customer_journeys.date') {
+                const isoString = titleLines[0];
+                const date = new Date(isoString);
+
+                const day = String(date.getDate()).padStart(2, '0');
+                const month = String(date.getMonth() + 1).padStart(2, '0'); // months are 0-indexed
+                const year = date.getFullYear();
+
+                const weekday = date.toLocaleDateString('en-US', { weekday: 'long' });
+
+                const xVal = `${day}.${month}.${year} (${weekday})`;
+                innerHTML = `
+                  <div>In ${fifthMetricValue} on <strong style="color:#AF3241">${xVal}, </strong>the <strong style="color:#AF3241">${KPIvalue}</strong> is <strong style="color:#AF3241">${value}</strong></div>
+                  <div style="margin-top: 8px; color:#62626e">Explanation: The average sales units as well as revenue in € only reflect the averages for shopper with a trolley.</div>
+                  
+                  `;
+
+              }
+              else if (xAxis === 'customer_journeys.dow') {
+                const xVal = titleLines[0].split(' ').slice(0, 2).join(' ');
+                innerHTML = `
+                  <div>In ${fifthMetricValue} on <strong style="color:#AF3241">${xVal}, </strong>the <strong style="color:#AF3241">${KPIvalue}</strong> is <strong style="color:#AF3241">${value}</strong></div>
+                  <div style="margin-top: 8px; color:#62626e">Explanation: The average sales units as well as revenue in € only reflect the averages for shopper with a trolley.</div>
+                  
+                  `;
+
+              }
+              else if (xAxis === 'customer_journeys.month1') {
+                const xVal = titleLines[0].split(' ').slice(0, 2).join(' ');
+                innerHTML = `
+                  <div>In ${fifthMetricValue} in <strong style="color:#AF3241">${xVal}, </strong>the <strong style="color:#AF3241">${KPIvalue}</strong> is <strong style="color:#AF3241">${value}</strong></div>
+                  <div style="margin-top: 8px; color:#62626e">Explanation: The average sales units as well as revenue in € only reflect the averages for shopper with a trolley.</div>
+                  
+                  `;
+
+              }
+
+            }
+            else if (label === 'Trolley Ratio (%)') {
+              if (xAxis === 'customer_journeys.hour') {
+                const xVal = titleLines[0].split(' ').slice(0, 2).join(' ');
+                innerHTML = `
+                  <div><strong style="color:#AF3241">${value}%</strong> of the trolleys were used in ${fifthMetricValue} during hour <strong style="color:#AF3241">${xVal}</strong></div>
+                  `;
+
+              }
+              else if (xAxis === 'customer_journeys.date') {
+                const isoString = titleLines[0];
+                const date = new Date(isoString);
+
+                const day = String(date.getDate()).padStart(2, '0');
+                const month = String(date.getMonth() + 1).padStart(2, '0'); // months are 0-indexed
+                const year = date.getFullYear();
+
+                const weekday = date.toLocaleDateString('en-US', { weekday: 'long' });
+
+                const xVal = `${day}.${month}.${year} (${weekday})`;
+                innerHTML = `
+                  <div><strong style="color:#AF3241">${value}%</strong> of the trolleys were used in ${fifthMetricValue} on <strong style="color:#AF3241">${xVal}</strong></div>
+                  `;
+
+              }
+              else if (xAxis === 'customer_journeys.dow') {
+                const xVal = titleLines[0].split(' ').slice(0, 2).join(' ');
+                innerHTML = `
+                  <div><strong style="color:#AF3241">${value}%</strong> of the trolleys were used in ${fifthMetricValue} on <strong style="color:#AF3241">${xVal}</strong></div>
+                  `;
+
+              }
+              else if (xAxis === 'customer_journeys.month1') {
+                const xVal = titleLines[0].split(' ').slice(0, 2).join(' ');
+                innerHTML = `
+                   <div><strong style="color:#AF3241">${value}%</strong> of the trolleys were used in ${fifthMetricValue} in <strong style="color:#AF3241">${xVal}</strong></div>
+                  `;
+
+              }
+
+            }
+
+
+          }
+
+          else if (GeneralKPIs) {
+
+            if (xAxis === 'receipts_retail.dow') {
+              const xVal = titleLines[0].split(' ').slice(0, 2).join(' ');
+
+              if (KPIvalue === "Sales (Units)") {
+                console.log(metricObj?.name)
+                if (metricObj?.name === "receipts_retail.sum_sale") {
+                  innerHTML = `
+                  <div><strong style="color:#AF3241">${value}</strong> Sales (Units) were generated in the store on <strong style="color:#AF3241">${xVal}</strong></div>
+                  `;
+                }
+                else {
+                  innerHTML = `
+                  <div><strong style="color:#AF3241">${value}</strong> shoppers visited the store on <strong style="color:#AF3241">${xVal}</strong></div>
+                  `;
+                }
+
+              }
+
+              else if (KPIvalue === formatCurrency('Revenue (CLP$)')) {
+                if (metricObj?.name === "receipts_retail.sum_revenue") {
+                  innerHTML =
+                    `
+                  <div><strong style="color:#AF3241">${value}</strong> shoppers visited the store on <strong style="color:#AF3241">${xVal}</strong></div>
+                  `;
+
+                }
+                else {
+                  innerHTML = `
+                  <div><strong style="color:#AF3241">${value}</strong> Revenue (CLP$) were generated in the store on <strong style="color:#AF3241">${xVal}</strong></div>
+                  `;
+                }
+
               }
             }
 
-            else if (KPIvalue === "Revenue (CLP$)") {
-              if (metricObj?.name === "receipts_retail.sum_revenue") {
-                innerHTML =
+            else if (xAxis === 'receipts_retail.month') {
+              const xVal = titleLines[0].split(' ').slice(0, 2).join(' ');
+
+              if (KPIvalue === "Sales (Units)") {
+                if (metricObj?.name === "receipts_retail.sum_sale") {
+                  innerHTML = `
+                  <div><strong style="color:#AF3241">${value}</strong> Sales (Units) were generated in the store in the month of <strong style="color:#AF3241">${xVal}</strong></div>
+                  `;
+                }
+                else {
                   innerHTML = `
                   <div><strong style="color:#AF3241">${value}</strong> shoppers visited the store in the month of <strong style="color:#AF3241">${xVal}</strong></div>
                   `;
-
+                }
               }
-              else {
-                innerHTML = `
+
+              else if (KPIvalue === formatCurrency('Revenue (CLP$)')) {
+                if (metricObj?.name === "receipts_retail.sum_revenue") {
+                  innerHTML =
+                    innerHTML = `
+                  <div><strong style="color:#AF3241">${value}</strong> shoppers visited the store in the month of <strong style="color:#AF3241">${xVal}</strong></div>
+                  `;
+
+                }
+                else {
+                  innerHTML = `
                   <div><strong style="color:#AF3241">${value}</strong> Revenue (CLP$) were generated in the store in the month of <strong style="color:#AF3241">${xVal}</strong></div>
                   `;
+                }
               }
             }
-          }
 
-          else if (xAxis === 'receipts_retail.hour') {
-            const xVal = titleLines[0].split(' ').slice(0, 2).join(' ');
+            else if (xAxis === 'receipts_retail.hour') {
+              const xVal = titleLines[0].split(' ').slice(0, 2).join(' ');
 
 
-            if (KPIvalue === "Sales (Units)") {
-              const mappedIndex = labelCtx.dataIndex; // fallback to default if out of bounds
-              const fifthMetric = metricsList[2];
+              if (KPIvalue === "Sales (Units)") {
+                const mappedIndex = labelCtx.dataIndex; // fallback to default if out of bounds
+                const fifthMetric = metricsList[2];
 
-              const fifthMetricValue = fifthMetric && results?.data?.[mappedIndex]?.[fifthMetric.name] !== undefined
-                ? formatValue(results.data[mappedIndex][fifthMetric.name], { type: 'number', dps: dps })
-                : 'N/A';
-              if (metricObj?.name === "receipts_retail.sum_sale") {
-                innerHTML = `
-                  <div><strong style="color:#AF3241">${value}</strong> Sales Units were generated in the store at hour <strong style="color:#AF3241">${xVal}</strong></div>
+                const fifthMetricValue = fifthMetric && results?.data?.[mappedIndex]?.[fifthMetric.name] !== undefined
+                  ? formatValue(results.data[mappedIndex][fifthMetric.name], { type: 'number', dps: dps }, Despar)
+                  : 'N/A';
+                if (metricObj?.name === "receipts_retail.sum_sale") {
+                  innerHTML = `
+                  <div><strong style="color:#AF3241">${value}</strong> Sales (Units) were generated in the store at hour <strong style="color:#AF3241">${xVal}</strong></div>
                   <div style="margin-top: 8px;">Average Sales (Units) is <strong style="color:#AF3241">${fifthMetricValue}</strong></div>
                   
                   `;
-              }
-              else {
-                innerHTML = `
+                }
+                else {
+                  innerHTML = `
                   <div><strong style="color:#AF3241">${value}</strong> shoppers visited the store at hour <strong style="color:#AF3241">${xVal}</strong></div>
                   <div style="margin-top: 8px;">Average Sales (Units) is <strong style="color:#AF3241">${fifthMetricValue}</strong></div>
                   `;
+                }
               }
-            }
 
-            else if (KPIvalue === "Revenue (CLP$)") {
-              const mappedIndex = labelCtx.dataIndex; // fallback to default if out of bounds
-              const fifthMetric = metricsList[3];
+              else if (KPIvalue === formatCurrency('Revenue (CLP$)')) {
+                const mappedIndex = labelCtx.dataIndex; // fallback to default if out of bounds
+                const fifthMetric = metricsList[3];
 
-              const fifthMetricValue = fifthMetric && results?.data?.[mappedIndex]?.[fifthMetric.name] !== undefined
-                ? formatValue(results.data[mappedIndex][fifthMetric.name], { type: 'number', dps: dps })
-                : 'N/A';
-              if (metricObj?.name === "receipts_retail.sum_revenue") {
-                innerHTML =
-                  `
+                const fifthMetricValue = fifthMetric && results?.data?.[mappedIndex]?.[fifthMetric.name] !== undefined
+                  ? formatValue(results.data[mappedIndex][fifthMetric.name], { type: 'number', dps: dps }, Despar)
+                  : 'N/A';
+                if (metricObj?.name === "receipts_retail.sum_revenue") {
+                  innerHTML =
+                    `
                   <div><strong style="color:#AF3241">${value}</strong> shoppers visited the store at hour <strong style="color:#AF3241">${xVal}</strong></div>
                   <div style="margin-top: 8px;">Average Revenue (CLP$) is <strong style="color:#AF3241">${fifthMetricValue}</strong></div>
                   
                   `;
 
-              }
-              else {
-                innerHTML = `
+                }
+                else {
+                  innerHTML = `
                   <div><strong style="color:#AF3241">${value}</strong> Revenue (CLP$) were generated in the store at hour <strong style="color:#AF3241">${xVal}</strong></div>
                   <div style="margin-top: 8px;">Average Revenue (CLP$) is <strong style="color:#AF3241">${fifthMetricValue}</strong></div>
                   
                   `;
+                }
+              }
+            }
+
+            else if (xAxis === 'receipts_retail.date') {
+              const isoString = titleLines[0];
+              const date = new Date(isoString);
+
+              const day = String(date.getDate()).padStart(2, '0');
+              const month = String(date.getMonth() + 1).padStart(2, '0'); // months are 0-indexed
+              const year = date.getFullYear();
+
+              const xVal = `${day}.${month}.${year}`;
+
+
+              if (KPIvalue === "Sales (Units)") {
+                const mappedIndex = labelCtx.dataIndex; // fallback to default if out of bounds
+                const fifthMetric = metricsList[2];
+
+                const fifthMetricValue = fifthMetric && results?.data?.[mappedIndex]?.[fifthMetric.name] !== undefined
+                  ? formatValue(results.data[mappedIndex][fifthMetric.name], { type: 'number', dps: dps }, Despar)
+                  : 'N/A';
+
+                if (metricObj?.name === "receipts_retail.sum_sale") {
+                  innerHTML = `
+                  <div><strong style="color:#AF3241">${value}</strong> Sales (Units) were generated in the store on <strong style="color:#AF3241">${xVal}</strong></div>
+                  <div style="margin-top: 8px;">Average Sales (Units) is <strong style="color:#AF3241">${fifthMetricValue}</strong></div>
+                  
+                  `;
+                }
+                else {
+                  innerHTML = `
+                  <div><strong style="color:#AF3241">${value}</strong> shoppers visited the store on <strong style="color:#AF3241">${xVal}</strong></div>
+                  <div style="margin-top: 8px;">Average Sales (Units) is <strong style="color:#AF3241">${fifthMetricValue}</strong></div>
+                  
+                  `;
+                }
+              }
+
+              else if (KPIvalue === formatCurrency('Revenue (CLP$)')) {
+                const mappedIndex = labelCtx.dataIndex; // fallback to default if out of bounds
+                const fifthMetric = metricsList[3];
+
+                const fifthMetricValue = fifthMetric && results?.data?.[mappedIndex]?.[fifthMetric.name] !== undefined
+                  ? formatValue(results.data[mappedIndex][fifthMetric.name], { type: 'number', dps: dps }, Despar)
+                  : 'N/A';
+                if (metricObj?.name === "receipts_retail.sum_revenue") {
+                  innerHTML =
+                    `
+                  <div><strong style="color:#AF3241">${value}</strong> shoppers visited the store on <strong style="color:#AF3241">${xVal}</strong></div>
+                  <div style="margin-top: 8px;">Average Revenue (CLP$) is <strong style="color:#AF3241">${fifthMetricValue}</strong></div>
+                  `;
+
+                }
+                else {
+                  innerHTML = `
+                  <div><strong style="color:#AF3241">${value}</strong> Revenue (CLP$) were generated in the store on <strong style="color:#AF3241">${xVal}</strong></div>
+                  <div style="margin-top: 8px;">Average Revenue (CLP$) is <strong style="color:#AF3241">${fifthMetricValue}</strong></div>
+                  `;
+                }
               }
             }
           }
 
-          else if (xAxis === 'receipts_retail.date') {
+
+          else if (Profitability) {
+            const labelMap = {
+              'Total Frequency': 'Frequency',
+              'Without C.A.P': 'Without C.A.P.',
+              'With C.A.P': 'With C.A.P.',
+              'Sales Uplift (No Negative)': 'Sales Uplift',
+              'SP CR Uplift Positive': 'Conversion Uplift',
+              'Sum Frequency No Device': 'Without Trolley',
+              'Sum Frequency Trolley': 'With Trolley',
+              'Average Frequency No Device Hourly': 'Without Trolley',
+              'Average Frequency Trolley Hourly': 'With Trolley',
+              'Average Frequency No Device Weekly': 'Without Trolley',
+              'Average Frequency Trolley Weekly': 'With Trolley',
+              'Sum Revenue No Device': 'Without Trolley',
+              'Sum Revenue Trolley': 'With Trolley',
+              'Sum Sales No Device': 'Without Trolley',
+              'Sum Sales Trolley': 'With Trolley',
+              'Average Sales No Device Hourly': 'Without Trolley',
+              'Average Sales Trolley Hourly': 'With Trolley',
+              'Average Sales No Device Weekly': 'Without Trolley',
+              'Average Sales Trolley Weekly': 'With Trolley',
+              'Average Revenue No Device Hourly': 'Without Trolley',
+              'Average Revenue Trolley Hourly': 'With Trolley',
+              'Average Revenue No Device Weekly': 'Without Trolley',
+              'Average Revenue Trolley Weekly': 'With Trolley',
+            };
+
+            const xVal = titleLines[0].split(' ').slice(0, 2).join(' ');
+            const mappedLabel = labelMap[label];
+            const valueLabel = displayAsPercentage ? 'percentage' : 'amount';
+
+            if (xAxis === 'receipts_retail.dow') {
+              innerHTML = `
+      <div>On <strong style="color:#AF3241">${xVal}</strong>, the ${valueLabel} of shoppers that shopped ${mappedLabel} is <strong style="color:#AF3241">${value}</strong></div>
+    `;
+            }
+
+            else if (xAxis === 'receipts_retail.month') {
+              innerHTML = `
+      <div>In <strong style="color:#AF3241">${xVal}</strong>, the ${valueLabel} of shoppers that shopped ${mappedLabel} is <strong style="color:#AF3241">${value}</strong></div>
+    `;
+            }
+
+            else if (xAxis === 'receipts_retail.hour') {
+              innerHTML = `
+      <div>At hour <strong style="color:#AF3241">${xVal}</strong>, the ${valueLabel} of shoppers that shopped ${mappedLabel} is <strong style="color:#AF3241">${value}</strong></div>
+    `;
+            }
+
+            else if (xAxis === 'receipts_retail.date') {
+              const isoString = titleLines[0];
+              const date = new Date(isoString);
+              const day = String(date.getDate()).padStart(2, '0');
+              const month = String(date.getMonth() + 1).padStart(2, '0');
+              const year = date.getFullYear();
+              const xVal = `${day}.${month}.${year}`;
+
+              innerHTML = `
+      <div>On <strong style="color:#AF3241">${xVal}</strong>, the ${valueLabel} of shoppers that shopped ${mappedLabel} is <strong style="color:#AF3241">${value}</strong></div>
+    `;
+            }
+          }
+
+
+
+          else if (Profitability2) {
+            const labelMap = {
+              'Total Frequency': 'Frequency',
+              'Without C.A.P': 'Without C.A.P.',
+              'With C.A.P': 'With C.A.P.',
+              'Sales Uplift (No Negative)': 'Sales Uplift',
+              'SP CR Uplift Positive': 'Conversion Uplift',
+              'Sum Frequency No Device': 'Without Trolley',
+              'Sum Frequency Trolley': 'With Trolley',
+              'Average Frequency No Device Hourly': 'Without Trolley',
+              'Average Frequency Trolley Hourly': 'With Trolley',
+              'Average Frequency No Device Weekly': 'Without Trolley',
+              'Average Frequency Trolley Weekly': 'With Trolley',
+              'Sum Revenue No Device': 'Without Trolley',
+              'Sum Revenue Trolley': 'With Trolley',
+              'Sum Sales No Device': 'Without Trolley',
+              'Sum Sales Trolley': 'With Trolley',
+              'Average Sales No Device Hourly': 'Without Trolley',
+              'Average Sales Trolley Hourly': 'With Trolley',
+              'Average Sales No Device Weekly': 'Without Trolley',
+              'Average Sales Trolley Weekly': 'With Trolley',
+              'Average Revenue No Device Hourly': 'Without Trolley',
+              'Average Revenue Trolley Hourly': 'With Trolley',
+              'Average Revenue No Device Weekly': 'Without Trolley',
+              'Average Revenue Trolley Weekly': 'With Trolley',
+            };
+            const xVal = titleLines[0].split(' ').slice(0, 2).join(' ');
+            const mappedLabel = labelMap[label];
+
+            if (xAxis === 'receipts_retail.dow') {
+
+              innerHTML = `
+                  <div>On <strong style="color:#AF3241">${xVal}</strong>, the ${KPIvalue} that shoppers ${mappedLabel} generated is <strong style="color:#AF3241">${value}</strong></div>
+                  `;
+
+            }
+
+            else if (xAxis === 'receipts_retail.month') {
+              innerHTML = `
+                  <div>In <strong style="color:#AF3241">${xVal}</strong>, the ${KPIvalue} that shoppers ${mappedLabel} generated is <strong style="color:#AF3241">${value}</strong></div>
+                  `;
+            }
+
+            else if (xAxis === 'receipts_retail.hour') {
+              innerHTML = `
+                  <div>At hour <strong style="color:#AF3241">${xVal}</strong>, the ${KPIvalue} that shoppers ${mappedLabel} generated is <strong style="color:#AF3241">${value}</strong></div>
+                  `;
+            }
+
+            else if (xAxis === 'receipts_retail.date') {
+              const isoString = titleLines[0];
+              const date = new Date(isoString);
+
+              const day = String(date.getDate()).padStart(2, '0');
+              const month = String(date.getMonth() + 1).padStart(2, '0'); // months are 0-indexed
+              const year = date.getFullYear();
+
+              const xVal = `${day}.${month}.${year}`;
+
+
+              innerHTML = `
+                  <div>On <strong style="color:#AF3241">${xVal}</strong>, the ${KPIvalue} that shoppers ${mappedLabel} generated is <strong style="color:#AF3241">${value}</strong></div>
+                  `;
+            }
+          }
+
+          else if (MarketingActivities) {
+            const dataIndex = labelCtx.dataIndex;
+
+            const lastMetric = metricsList[metricsList.length - 1];
+
+            const fifthMetricValue = lastMetric && results?.data?.[dataIndex]?.[lastMetric.name]
+
+            let xVal = titleLines[0];
+
+            innerHTML = `
+            <div>Analysis Group <strong style="color:#AF3241">"${fifthMetricValue}"</strong></div>
+    <div style="margin-top: 8px;"><strong style="color:#F04B55">${xVal} </strong>Conversion <strong style="color:#F04B55">${label}</strong> is <strong style="color:#F04B55">${value}</strong></div>
+  `;
+
+
+          }
+
+
+          else if (xAxis === "overview.hour") {
+
+            const xVal = titleLines[0].split(' ').slice(0, 2).join(' ');
+
+            innerHTML = `
+                  <div><strong style="color:#AF3241">${value}</strong> impressions were generated during hour <strong style="color:#AF3241">${xVal}.</strong></div>
+            
+                  `;
+
+          }
+
+          else if (xAxis === "overview.date") {
             const isoString = titleLines[0];
             const date = new Date(isoString);
 
@@ -1148,56 +2168,531 @@ export default function getBarChartOptions({
             const month = String(date.getMonth() + 1).padStart(2, '0'); // months are 0-indexed
             const year = date.getFullYear();
 
-            const xVal = `${day}.${month}.${year}`;
-
-
-            if (KPIvalue === "Sales (Units)") {
-              const mappedIndex = labelCtx.dataIndex; // fallback to default if out of bounds
-              const fifthMetric = metricsList[2];
-
-              const fifthMetricValue = fifthMetric && results?.data?.[mappedIndex]?.[fifthMetric.name] !== undefined
-                ? formatValue(results.data[mappedIndex][fifthMetric.name], { type: 'number', dps: dps })
-                : 'N/A';
-
-              if (metricObj?.name === "receipts_retail.sum_sale") {
-                innerHTML = `
-                  <div><strong style="color:#AF3241">${value}</strong> Sales Units were generated in the store on <strong style="color:#AF3241">${xVal}</strong></div>
-                  <div style="margin-top: 8px;">Average Sales (Units) is <strong style="color:#AF3241">${fifthMetricValue}</strong></div>
-                  
-                  `;
-              }
-              else {
-                innerHTML = `
-                  <div><strong style="color:#AF3241">${value}</strong> shoppers visited the store on <strong style="color:#AF3241">${xVal}</strong></div>
-                  <div style="margin-top: 8px;">Average Sales (Units) is <strong style="color:#AF3241">${fifthMetricValue}</strong></div>
-                  
-                  `;
-              }
+            // Function to get week number
+            function getWeekNumber(d) {
+              // Copy date so don't modify original
+              d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+              // Set to nearest Thursday: current date + 4 - current day number
+              // Make Sunday's day number 7
+              d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+              // Get first day of year
+              const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+              // Calculate full weeks to nearest Thursday
+              const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+              return weekNo;
             }
 
-            else if (KPIvalue === "Revenue (CLP$)") {
-              const mappedIndex = labelCtx.dataIndex; // fallback to default if out of bounds
-              const fifthMetric = metricsList[3];
+            const weekNumber = getWeekNumber(date);
+            const xVal = `${day}.${month}.${year}, (Week ${weekNumber})`;
 
-              const fifthMetricValue = fifthMetric && results?.data?.[mappedIndex]?.[fifthMetric.name] !== undefined
-                ? formatValue(results.data[mappedIndex][fifthMetric.name], { type: 'number', dps: dps })
-                : 'N/A';
-              if (metricObj?.name === "receipts_retail.sum_revenue") {
-                innerHTML =
-                  `
-                  <div><strong style="color:#AF3241">${value}</strong> shoppers visited the store on <strong style="color:#AF3241">${xVal}</strong></div>
-                  <div style="margin-top: 8px;">Average Revenue (CLP$) is <strong style="color:#AF3241">${fifthMetricValue}</strong></div>
+            innerHTML = `
+          <div><strong style="color:#AF3241">${value}</strong> impressions were generated on <strong style="color:#AF3241">${xVal}.</strong></div>
+          `;
+          }
+
+          else if (xAxis === "overview.dow") {
+
+            const xVal = titleLines[0].split(' ').slice(0, 2).join(' ');
+
+            innerHTML = `
+                  <div><strong style="color:#AF3241">${value}</strong> impressions were generated on <strong style="color:#AF3241">${xVal}.</strong></div>
+            
                   `;
 
-              }
-              else {
-                innerHTML = `
-                  <div><strong style="color:#AF3241">${value}</strong> Revenue (CLP$) were generated in the store on <strong style="color:#AF3241">${xVal}</strong></div>
-                  <div style="margin-top: 8px;">Average Revenue (CLP$) is <strong style="color:#AF3241">${fifthMetricValue}</strong></div>
+          }
+
+          else if (xAxis === "overview.month1") {
+
+            const xVal = titleLines[0].split(' ').slice(0, 2).join(', ');
+
+            innerHTML = `
+                  <div><strong style="color:#AF3241">${value}</strong> impressions were generated in <strong style="color:#AF3241">${xVal}.</strong></div>
+                  
                   `;
-              }
+
+          }
+
+          else if (overview) {
+
+            const formatDate = (dateString: string | undefined) => {
+              if (!dateString) return 'No date';
+              const parts = dateString.split('-');
+              if (parts.length !== 3) return dateString; // return original if format is unexpected
+              return `${parts[2]}.${parts[1]}.${parts[0]}`;
+            };
+
+            const mappedIndex = labelCtx.dataIndex; // fallback to default if out of bounds
+            const secondMetric = metricsList[1];
+
+            const secondMetricValue = secondMetric && results?.data?.[mappedIndex]?.[secondMetric.name] !== undefined
+              ? formatDate(results.data[mappedIndex][secondMetric.name]) // Changed type to 'string'
+              : 'N/A';
+
+
+            const thirdMetric = metricsList[2];
+
+            const thirdMetricValue = thirdMetric && results?.data?.[mappedIndex]?.[thirdMetric.name] !== undefined
+              ? formatDate(results.data[mappedIndex][thirdMetric.name]) // Changed type to 'string'
+              : 'N/A';
+
+            const xVal = titleLines[0].split(' ').slice(0, 2).join(' ');
+
+            innerHTML = `
+                  <div><strong style="color:#AF3241">${value}</strong> impressions were generated in <strong style="color:#AF3241">${xVal}</strong></div>
+                  <div style="margin-top: 8px;">Period: <strong style="color:#AF3241">${secondMetricValue}</strong> to <strong style="color:#AF3241">${thirdMetricValue}</strong></div>
+            
+                  `;
+
+          }
+
+          else if (edeka) {
+            let xVal = titleLines[0].split(' ').slice(0, 2).join(' ');
+            xVal = xVal.charAt(0).toUpperCase() + xVal.slice(1).toLowerCase();
+
+            innerHTML = `
+    <div>In <strong style="color:#AF3241">${xVal}, </strong><strong style="color:#AF3241">${value}</strong> Impressions are encountered.</div>
+  `;
+          }
+
+          else if (masterUplift) {
+            const dataIndex = labelCtx.dataIndex;
+
+            const fifthMetric = metricsList[1];
+            const fifthMetricValue = fifthMetric && results?.data?.[dataIndex]?.[fifthMetric.name]
+
+            let xVal = titleLines[0].split(' ').slice(0, 2).join(' ');
+
+            innerHTML = `
+            <div>Analysis Group <strong style="color:#AF3241">${fifthMetricValue}</strong></div>
+    <div style="margin-top: 8px;">In <strong style="color:#F04B55">${xVal},</strong> Sales Uplift is <strong style="color:#F04B55">${value}%</strong></div>
+  `;
+          }
+
+
+          else if (xAxis === 'big_dm.weather_bins') {
+            const dataIndex = labelCtx.dataIndex;
+
+            const fifthMetric = metricsList[3];
+            const fifthMetricValue = fifthMetric && results?.data?.[dataIndex]?.[fifthMetric.name]
+
+            let xVal = titleLines[0].split(' ').slice(0, 2).join(' ');
+
+            if (label === 'With C.A.P.') {
+
+              innerHTML = `
+          <div> Analysis Group <strong style = "color:#AF3241"> "${fifthMetricValue}" </strong></div>
+            <div style="margin-top: 8px;"> At <strong style = "color:#AF3241"> ${xVal} </strong> temperature, Conversion <strong style="color:#AF3241">With C.A.P. </strong> is <strong style="color:#AF3241">${value}</strong></div>
+              `;
+
+            } else if (label === 'Without C.A.P.') {
+
+              innerHTML = `
+          <div> Analysis Group <strong style = "color:#AF3241"> "${fifthMetricValue}" </strong></div>
+            <div style="margin-top: 8px;"> At <strong style = "color:#62626E"> ${xVal} </strong> temperature, Conversion <strong style="color:#62626E">Without C.A.P. </strong> is <strong style="color:#62626E">${value}</strong></div>
+              `;
+
             }
           }
+
+
+          else if (xAxis === 'big_dm.weather_feels_bins') {
+            const dataIndex = labelCtx.dataIndex;
+
+            const fifthMetric = metricsList[3];
+            const fifthMetricValue = fifthMetric && results?.data?.[dataIndex]?.[fifthMetric.name]
+
+            let xVal = titleLines[0].split(' ').slice(0, 2).join(' ');
+
+            if (label === 'With C.A.P.') {
+
+              innerHTML = `
+          <div> Analysis Group <strong style = "color:#AF3241"> "${fifthMetricValue}" </strong></div>
+            <div style="margin-top: 8px;"> At <strong style = "color:#AF3241"> ${xVal} </strong> temperature, Conversion <strong style="color:#AF3241">With C.A.P. </strong> is <strong style="color:#AF3241">${value}</strong></div>
+              `;
+
+            } else if (label === 'Without C.A.P.') {
+
+              innerHTML = `
+          <div> Analysis Group <strong style = "color:#AF3241"> "${fifthMetricValue}" </strong></div>
+            <div style="margin-top: 8px;"> At <strong style = "color:#62626E"> ${xVal} </strong> temperature, Conversion <strong style="color:#62626E">Without C.A.P. </strong> is <strong style="color:#62626E">${value}</strong></div>
+              `;
+
+            }
+          }
+
+          else if (xAxis === 'big_dm.rain_bool') {
+            const dataIndex = labelCtx.dataIndex;
+
+            const fifthMetric = metricsList[3];
+            const fifthMetricValue = fifthMetric && results?.data?.[dataIndex]?.[fifthMetric.name]
+
+            let xVal = titleLines[0].split(' ').slice(0, 2).join(' ');
+
+            if (label === 'With C.A.P.') {
+
+              innerHTML = `
+          <div> Analysis Group <strong style = "color:#AF3241"> "${fifthMetricValue}" </strong></div>
+            <div style="margin-top: 8px;">Rain <strong style = "color:#AF3241"> ${xVal}</strong>, Conversion <strong style="color:#AF3241">With C.A.P. </strong> is <strong style="color:#AF3241">${value}</strong></div>
+              `;
+
+            } else if (label === 'Without C.A.P.') {
+
+              innerHTML = `
+          <div> Analysis Group <strong style = "color:#AF3241"> "${fifthMetricValue}" </strong></div>
+            <div style="margin-top: 8px;">Rain <strong style = "color:#62626E"> ${xVal}</strong>, Conversion <strong style="color:#62626E">Without C.A.P. </strong> is <strong style="color:#62626E">${value}</strong></div>
+              `;
+
+            }
+          }
+
+          else if (xAxis === 'big_dm.snow_bool') {
+            const dataIndex = labelCtx.dataIndex;
+
+            const fifthMetric = metricsList[3];
+            const fifthMetricValue = fifthMetric && results?.data?.[dataIndex]?.[fifthMetric.name]
+
+            let xVal = titleLines[0].split(' ').slice(0, 2).join(' ');
+
+            if (label === 'With C.A.P.') {
+
+              innerHTML = `
+          <div> Analysis Group <strong style = "color:#AF3241"> "${fifthMetricValue}" </strong></div>
+            <div style="margin-top: 8px;">Snow <strong style = "color:#AF3241"> ${xVal}</strong>, Conversion <strong style="color:#AF3241">With C.A.P. </strong> is <strong style="color:#AF3241">${value}</strong></div>
+              `;
+
+            } else if (label === 'Without C.A.P.') {
+
+              innerHTML = `
+          <div> Analysis Group <strong style = "color:#AF3241"> "${fifthMetricValue}" </strong></div>
+            <div style="margin-top: 8px;">Snow <strong style = "color:#62626E"> ${xVal}</strong>, Conversion <strong style="color:#62626E">Without C.A.P. </strong> is <strong style="color:#62626E">${value}</strong></div>
+              `;
+
+            }
+          }
+
+          else if (xAxis === 'big_dm.name_market_type') {
+            const dataIndex = labelCtx.dataIndex;
+
+            const fifthMetric = metricsList[3];
+            const fifthMetricValue = fifthMetric && results?.data?.[dataIndex]?.[fifthMetric.name]
+
+            let xVal = titleLines[0].split(' ').slice(0, 2).join(' ');
+
+            if (label === 'With C.A.P.') {
+
+              innerHTML = `
+  <div>Analysis Group <strong style="color:#AF3241">"${fifthMetricValue}"</strong></div>
+  <div style="font-size: 0.9em; color: #555; margin-top: 5px;">
+    <div>0%: Clear sky with no clouds.</div>
+    <div>10-20%: Mostly clear, with some scattered clouds.</div>
+    <div>30-50%: Partly cloudy, with a mix of clouds and clear sky.</div>
+    <div>60-90%: Mostly cloudy, with more clouds than clear sky.</div>
+    <div>100%: Overcast sky, completely covered by clouds.</div>
+  </div>
+`;
+
+
+            } else if (label === 'Without C.A.P.') {
+
+              innerHTML = `
+  <div>Analysis Group <strong style="color:#AF3241">"${fifthMetricValue}"</strong></div>
+  <div style="font-size: 0.9em; color: #555; margin-top: 5px;">
+    <div>0%: Clear sky with no clouds.</div>
+    <div>10-20%: Mostly clear, with some scattered clouds.</div>
+    <div>30-50%: Partly cloudy, with a mix of clouds and clear sky.</div>
+    <div>60-90%: Mostly cloudy, with more clouds than clear sky.</div>
+    <div>100%: Overcast sky, completely covered by clouds.</div>
+  </div>
+`;
+
+
+            }
+          }
+
+
+
+
+
+
+
+
+
+
+
+
+          else if (MasterLines) {
+            const dataIndex = labelCtx.dataIndex;
+
+            const fifthMetric = metricsList[1];
+            const fifthMetricValue = fifthMetric && results?.data?.[dataIndex]?.[fifthMetric.name]
+
+            let xVal = titleLines[0].split(' ').slice(0, 2).join(' ');
+
+            if (label === 'With C.A.P.') {
+              if (xAxis === 'big_dm.hour') {
+
+                innerHTML = `
+          <div> Analysis Group <strong style = "color:#AF3241"> "${fifthMetricValue}" </strong></div>
+            <div style="margin-top: 8px;">At hour<strong style = "color:#AF3241"> ${xVal}, </strong>Conversion <strong style="color:#AF3241">With C.A.P. </strong> is <strong style="color:#AF3241">${value}%</strong></div>
+              `;
+              }
+              else if (xAxis === 'big_dm.date') {
+                const isoString = titleLines[0];
+                const date = new Date(isoString);
+
+                const day = String(date.getDate()).padStart(2, '0');
+                const month = String(date.getMonth() + 1).padStart(2, '0'); // months are 0-indexed
+                const year = date.getFullYear();
+
+                const weekday = date.toLocaleDateString('en-US', { weekday: 'long' });
+
+                const xVal = `${day}.${month}.${year} (${weekday})`;
+
+                innerHTML = `
+          <div> Analysis Group <strong style = "color:#AF3241"> "${fifthMetricValue}" </strong></div>
+            <div style="margin-top: 8px;">On <strong style = "color:#AF3241"> ${xVal}, </strong>Conversion <strong style="color:#AF3241">With C.A.P. </strong> is <strong style="color:#AF3241">${value}%</strong></div>
+              `;
+              }
+              else if (xAxis === 'big_dm.weekday') {
+
+                innerHTML = `
+          <div> Analysis Group <strong style = "color:#AF3241"> "${fifthMetricValue}" </strong></div>
+            <div style="margin-top: 8px;">On<strong style = "color:#AF3241"> ${xVal}, </strong>Conversion <strong style="color:#AF3241">With C.A.P. </strong> is <strong style="color:#AF3241">${value}%</strong></div>
+              `;
+              }
+              else if (xAxis === 'big_dm.week') {
+
+                innerHTML = `
+          <div> Analysis Group <strong style = "color:#AF3241"> "${fifthMetricValue}" </strong></div>
+            <div style="margin-top: 8px;">In Week<strong style = "color:#AF3241"> ${xVal}, </strong>Conversion <strong style="color:#AF3241">With C.A.P. </strong> is <strong style="color:#AF3241">${value}%</strong></div>
+              `;
+              }
+            }
+
+            else if (label === 'Temperature (°C)') {
+              if (xAxis === 'big_dm.hour') {
+
+                innerHTML = `
+          <div> Analysis Group <strong style = "color:#AF3241"> "${fifthMetricValue}" </strong></div>
+            <div style="margin-top: 8px;">At hour<strong style = "color:#AF3241"> ${xVal}, </strong>the Average Temperature (°C) is <strong style="color:#AF3241">${value}</strong></div>
+              `;
+              }
+              else if (xAxis === 'big_dm.date') {
+                const isoString = titleLines[0];
+                const date = new Date(isoString);
+
+                const day = String(date.getDate()).padStart(2, '0');
+                const month = String(date.getMonth() + 1).padStart(2, '0'); // months are 0-indexed
+                const year = date.getFullYear();
+
+                const weekday = date.toLocaleDateString('en-US', { weekday: 'long' });
+
+                const xVal = `${day}.${month}.${year} (${weekday})`;
+
+
+                innerHTML = `
+          <div> Analysis Group <strong style = "color:#AF3241"> "${fifthMetricValue}" </strong></div>
+            <div style="margin-top: 8px;">On<strong style = "color:#AF3241"> ${xVal}, </strong>the Average Temperature (°C) is <strong style="color:#AF3241">${value}</strong></div>
+              `;
+              }
+              else if (xAxis === 'big_dm.weekday') {
+
+                innerHTML = `
+          <div> Analysis Group <strong style = "color:#AF3241"> "${fifthMetricValue}" </strong></div>
+            <div style="margin-top: 8px;">On<strong style = "color:#AF3241"> ${xVal}, </strong>the Average Temperature (°C) is <strong style="color:#AF3241">${value}</strong></div>
+             `;
+              }
+              else if (xAxis === 'big_dm.week') {
+
+                innerHTML = `
+          <div> Analysis Group <strong style = "color:#AF3241"> "${fifthMetricValue}" </strong></div>
+            <div style="margin-top: 8px;">In Week<strong style = "color:#AF3241"> ${xVal}, </strong>the Average Temperature (°C) is <strong style="color:#AF3241">${value}</strong></div>
+             `;
+              }
+            }
+
+
+            else if (label === 'Temperature (Feels Like °C)') {
+              if (xAxis === 'big_dm.hour') {
+
+                innerHTML = `
+          <div> Analysis Group <strong style = "color:#AF3241"> "${fifthMetricValue}" </strong></div>
+            <div style="margin-top: 8px;">At hour<strong style = "color:#AF3241"> ${xVal}, </strong>the Average Temperature (Feels Like °C) is <strong style="color:#AF3241">${value}</strong></div>
+              `;
+              }
+              else if (xAxis === 'big_dm.date') {
+                const isoString = titleLines[0];
+                const date = new Date(isoString);
+
+                const day = String(date.getDate()).padStart(2, '0');
+                const month = String(date.getMonth() + 1).padStart(2, '0'); // months are 0-indexed
+                const year = date.getFullYear();
+
+                const weekday = date.toLocaleDateString('en-US', { weekday: 'long' });
+
+                const xVal = `${day}.${month}.${year} (${weekday})`;
+
+
+                innerHTML = `
+          <div> Analysis Group <strong style = "color:#AF3241"> "${fifthMetricValue}" </strong></div>
+            <div style="margin-top: 8px;">On<strong style = "color:#AF3241"> ${xVal}, </strong>the Average Temperature (Feels Like °C) is <strong style="color:#AF3241">${value}</strong></div>
+              `;
+              }
+              else if (xAxis === 'big_dm.weekday') {
+
+                innerHTML = `
+          <div> Analysis Group <strong style = "color:#AF3241"> "${fifthMetricValue}" </strong></div>
+            <div style="margin-top: 8px;">On<strong style = "color:#AF3241"> ${xVal}, </strong>the Average Temperature (Feels Like °C) is <strong style="color:#AF3241">${value}</strong></div>
+             `;
+              }
+              else if (xAxis === 'big_dm.week') {
+
+                innerHTML = `
+          <div> Analysis Group <strong style = "color:#AF3241"> "${fifthMetricValue}" </strong></div>
+            <div style="margin-top: 8px;">In Week<strong style = "color:#AF3241"> ${xVal}, </strong>the Average Temperature (Feels Like °C) is <strong style="color:#AF3241">${value}</strong></div>
+             `;
+              }
+            }
+
+            else if (label === 'Clouds (%)') {
+              if (xAxis === 'big_dm.hour') {
+
+                innerHTML = `
+          <div> Analysis Group <strong style = "color:#AF3241"> "${fifthMetricValue}" </strong></div>
+            <div style="margin-top: 8px;">At hour<strong style = "color:#AF3241"> ${xVal}, </strong>the Average Clouds (%) is <strong style="color:#AF3241">${value}</strong></div>
+              `;
+              }
+              else if (xAxis === 'big_dm.date') {
+                const isoString = titleLines[0];
+                const date = new Date(isoString);
+
+                const day = String(date.getDate()).padStart(2, '0');
+                const month = String(date.getMonth() + 1).padStart(2, '0'); // months are 0-indexed
+                const year = date.getFullYear();
+
+                const weekday = date.toLocaleDateString('en-US', { weekday: 'long' });
+
+                const xVal = `${day}.${month}.${year} (${weekday})`;
+
+
+                innerHTML = `
+          <div> Analysis Group <strong style = "color:#AF3241"> "${fifthMetricValue}" </strong></div>
+            <div style="margin-top: 8px;">On<strong style = "color:#AF3241"> ${xVal}, </strong>the Average Clouds (%) is <strong style="color:#AF3241">${value}</strong></div>
+              `;
+              }
+              else if (xAxis === 'big_dm.weekday') {
+
+                innerHTML = `
+          <div> Analysis Group <strong style = "color:#AF3241"> "${fifthMetricValue}" </strong></div>
+            <div style="margin-top: 8px;">On<strong style = "color:#AF3241"> ${xVal}, </strong>the Average Clouds (%) is <strong style="color:#AF3241">${value}</strong></div>
+             `;
+              }
+              else if (xAxis === 'big_dm.week') {
+
+                innerHTML = `
+          <div> Analysis Group <strong style = "color:#AF3241"> "${fifthMetricValue}" </strong></div>
+            <div style="margin-top: 8px;">In Week<strong style = "color:#AF3241"> ${xVal}, </strong>the Average Clouds (%) is <strong style="color:#AF3241">${value}</strong></div>
+             `;
+              }
+            }
+
+            else if (label === 'Rain (millimeter)') {
+              if (xAxis === 'big_dm.hour') {
+
+                innerHTML = `
+          <div> Analysis Group <strong style = "color:#AF3241"> "${fifthMetricValue}" </strong></div>
+            <div style="margin-top: 8px;">At hour<strong style = "color:#AF3241"> ${xVal}, </strong>the Average Rain (millimeter) is <strong style="color:#AF3241">${value}</strong></div>
+              `;
+              }
+              else if (xAxis === 'big_dm.date') {
+                const isoString = titleLines[0];
+                const date = new Date(isoString);
+
+                const day = String(date.getDate()).padStart(2, '0');
+                const month = String(date.getMonth() + 1).padStart(2, '0'); // months are 0-indexed
+                const year = date.getFullYear();
+
+                const weekday = date.toLocaleDateString('en-US', { weekday: 'long' });
+
+                const xVal = `${day}.${month}.${year} (${weekday})`;
+
+
+                innerHTML = `
+          <div> Analysis Group <strong style = "color:#AF3241"> "${fifthMetricValue}" </strong></div>
+            <div style="margin-top: 8px;">On<strong style = "color:#AF3241"> ${xVal}, </strong>the Average Rain (millimeter) is <strong style="color:#AF3241">${value}</strong></div>
+              `;
+              }
+              else if (xAxis === 'big_dm.weekday') {
+
+                innerHTML = `
+          <div> Analysis Group <strong style = "color:#AF3241"> "${fifthMetricValue}" </strong></div>
+            <div style="margin-top: 8px;">On<strong style = "color:#AF3241"> ${xVal}, </strong>the Average Rain (millimeter) is <strong style="color:#AF3241">${value}</strong></div>
+             `;
+              }
+              else if (xAxis === 'big_dm.week') {
+
+                innerHTML = `
+          <div> Analysis Group <strong style = "color:#AF3241"> "${fifthMetricValue}" </strong></div>
+            <div style="margin-top: 8px;">In Week<strong style = "color:#AF3241"> ${xVal}, </strong>the Average Rain (millimeter) is <strong style="color:#AF3241">${value}</strong></div>
+             `;
+              }
+            }
+
+            else if (label === 'Snow (millimeter)') {
+              if (xAxis === 'big_dm.hour') {
+
+                innerHTML = `
+          <div> Analysis Group <strong style = "color:#AF3241"> "${fifthMetricValue}" </strong></div>
+            <div style="margin-top: 8px;">At hour<strong style = "color:#AF3241"> ${xVal}, </strong>the Average Snow (millimeter) is <strong style="color:#AF3241">${value}</strong></div>
+              `;
+              }
+              else if (xAxis === 'big_dm.date') {
+                const isoString = titleLines[0];
+                const date = new Date(isoString);
+
+                const day = String(date.getDate()).padStart(2, '0');
+                const month = String(date.getMonth() + 1).padStart(2, '0'); // months are 0-indexed
+                const year = date.getFullYear();
+
+                const weekday = date.toLocaleDateString('en-US', { weekday: 'long' });
+
+                const xVal = `${day}.${month}.${year} (${weekday})`;
+
+
+                innerHTML = `
+          <div> Analysis Group <strong style = "color:#AF3241"> "${fifthMetricValue}" </strong></div>
+            <div style="margin-top: 8px;">On<strong style = "color:#AF3241"> ${xVal}, </strong>the Average Snow (millimeter) is <strong style="color:#AF3241">${value}</strong></div>
+              `;
+              }
+              else if (xAxis === 'big_dm.weekday') {
+
+                innerHTML = `
+          <div> Analysis Group <strong style = "color:#AF3241"> "${fifthMetricValue}" </strong></div>
+            <div style="margin-top: 8px;">On<strong style = "color:#AF3241"> ${xVal}, </strong>the Average Snow (millimeter) is <strong style="color:#AF3241">${value}</strong></div>
+             `;
+              }
+              else if (xAxis === 'big_dm.week') {
+
+                innerHTML = `
+          <div> Analysis Group <strong style = "color:#AF3241"> "${fifthMetricValue}" </strong></div>
+            <div style="margin-top: 8px;">In Week<strong style = "color:#AF3241"> ${xVal}, </strong>the Average Snow (millimeter) is <strong style="color:#AF3241">${value}</strong></div>
+             `;
+              }
+            }
+
+          }
+
+          else if (TrolleyBar) {
+            const xVal = titleLines[0];
+
+            innerHTML = `In<strong style = "color:#AF3241"> ${xVal}, ${value}%</strong> of the tolleys were used
+              `;
+          }
+
+
+
+
+
 
           else if (impression && granularity && titleLines.length && bodyLines.length) {
             const xVal = titleLines[0];
@@ -1248,7 +2743,7 @@ export default function getBarChartOptions({
                 break;
               case 'day':
                 const expandedDate = expandMonthName(xVal);
-                prefix = `On <strong style="color:#a53241">${expandedDate}</strong>, Impressions are `;
+                prefix = `On <strong style="color:#a53241">${expandedDate} </strong>, Impressions are `;
                 break;
 
               case 'week':
@@ -1270,13 +2765,46 @@ export default function getBarChartOptions({
           }
 
 
+          innerHTML = formatCurrency(innerHTML);
+
+
           tooltipEl.innerHTML = innerHTML;
 
           // Positioning
+          // Positioning
           const position = context.chart.canvas.getBoundingClientRect();
+          const tooltipWidth = tooltipEl.offsetWidth;
+          const tooltipHeight = tooltipEl.offsetHeight;
+          const chartWidth = context.chart.width;
+          const chartHeight = context.chart.height;
+
+          // Calculate if tooltip would go off screen to the right
+          const rightEdge = position.left + tooltipModel.caretX + tooltipWidth;
+          const windowWidth = window.innerWidth;
+          const wouldGoOffRight = rightEdge > windowWidth;
+
+          // Calculate if tooltip would go off screen to the top
+          const topEdge = position.top + tooltipModel.caretY - tooltipHeight;
+          const wouldGoOffTop = topEdge < 0;
+
           tooltipEl.style.opacity = '1';
-          tooltipEl.style.left = position.left + window.pageXOffset + tooltipModel.caretX + 'px';
-          tooltipEl.style.top = position.top + window.pageYOffset + tooltipModel.caretY + 'px';
+
+          // Adjust position based on screen edges
+          let leftPos = position.left + window.pageXOffset + tooltipModel.caretX;
+          let topPos = position.top + window.pageYOffset + tooltipModel.caretY;
+
+          // If tooltip would go off right side, position to left of cursor
+          if (wouldGoOffRight) {
+            leftPos = position.left + window.pageXOffset + tooltipModel.caretX - tooltipWidth - 10;
+          }
+
+          // If tooltip would go off top, position below cursor
+          if (wouldGoOffTop) {
+            topPos = position.top + window.pageYOffset + tooltipModel.caretY + 20;
+          }
+
+          tooltipEl.style.left = leftPos + 'px';
+          tooltipEl.style.top = topPos + 'px';
         }
       },
 
@@ -1331,14 +2859,14 @@ export default function getBarChartOptions({
                 let val = formatValue(barTotal, {
                   type: 'number',
                   dps: dps,
-                  meta: displayAsPercentage ? undefined : metric?.meta,
-                });
+                  meta: displayAsPercentage ? undefined : metric?.meta
+                }, Despar);
                 if (displayAsPercentage) {
                   val += '%';
                 }
                 return val;
               } else {
-                return ''; // has to be here or chartjs decides we want a number on every bart part
+                return '';
               }
             },
           },
@@ -1348,26 +2876,57 @@ export default function getBarChartOptions({
             align: stacked || stackMetrics ? 'center' : 'end',
             display: showLabels ? 'auto' : false,
             formatter: (v, context) => {
-              // metric needed for formatting
+              const dataset = context.chart.data.datasets?.[context.datasetIndex];
+              const dataLength = dataset?.data?.length || 0;
+
+              // Skip label if too many points and not every 5th
+              if (dataLength > 100 && context.dataIndex % 10 !== 0 && context.dataset.type === 'line') {
+                return null;
+              }
+              const label = context.dataset.label || '';
               const metricIndex = context.datasetIndex;
               const metricsList = [...(metrics || []), ...(lineMetrics || [])];
               const metricObj = metrics ? metricsList[metricIndex] : metric;
 
-              if (v === null || v === 0) return null;   // ← NEW: also skip zeros
+              if (v === null || v === 0) return null;
 
               let val = formatValue(v, {
                 type: 'number',
                 dps: dps,
-                meta: displayAsPercentage ? undefined : metricObj?.meta,
-              });
-              if (displayAsPercentage) val += '%';
+                meta: displayAsPercentage ? undefined : metricObj?.meta
+              }, Despar);
+
+              if (typeof v === 'number') {
+                if (v >= 1_000_000_000) {
+                  val = `${(v / 1_000_000_000).toFixed(1)}B`;
+                } else if (v >= 1_000_000) {
+                  val = `${(v / 1_000_000).toFixed(1)}M`;
+                } else if (v >= 10_000 && Profitability2) {
+                  val = `${Math.round(v / 1_000)}K`;
+                }
+              }
+
+
+              if (
+                displayAsPercentage ||
+                (MasterLines && label === 'With C.A.P.') ||
+                (InstoreDuration && label === 'Average Shopper (%)') ||
+                (TrolleyUsage && label === 'Trolley Ratio (%)')
+              ) {
+                val += '%';
+              }
+
+              if (MasterRetail && InstoreDuration && label === 'Average Revenue') {
+                val += '€';
+              }
+
               return val;
             },
             padding: -12,
           },
-
         },
       },
+
     },
   };
 }

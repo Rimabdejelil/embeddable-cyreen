@@ -7,7 +7,7 @@ export const meta = {
   name: 'LineChart',
   label: 'Line chart (time-series)',
   classNames: ['inside-card'],
-  category: 'Charts: time-series',
+  category: 'Embeddable Components',
   inputs: [
     {
       name: 'ds',

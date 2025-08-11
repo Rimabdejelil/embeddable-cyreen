@@ -19,8 +19,7 @@ import Component from './index';
 export const meta = {
   name: 'OverviewTable',
   label: 'Overview table',
-  classNames: ['inside-card'],
-  category: 'Charts: essentials',
+  category: 'Cyreen Components',
   inputs: [
     {
       name: 'ds',
@@ -73,6 +72,13 @@ export const meta = {
       category: 'Variables to configure',
     },
     // Table settings
+    {
+      name: 'Despar',
+      type: 'boolean',
+      label: 'Despar',
+      category: 'Chart settings',
+      defaultValue: false,
+    },
     {
       name: 'title',
       type: 'string',
@@ -152,6 +158,21 @@ export const meta = {
       label: 'Font size in pixels',
       category: 'Chart styling',
     },
+
+    {
+      name: 'enableDownloadAsCSV',
+      type: 'boolean',
+      label: 'Show download as CSV',
+      category: 'Export options',
+      defaultValue: true,
+    },
+    {
+      name: 'enableDownloadAsPNG',
+      type: 'boolean',
+      label: 'Show download as PNG',
+      category: 'Export options',
+      defaultValue: true,
+    },
   ],
 } as const satisfies EmbeddedComponentMeta;
 
@@ -191,46 +212,46 @@ export default defineComponent(Component, meta, {
     const dataResults =
       rowDimensions?.length && aggregateRowDimensions
         ? rowDimensions.reduce((resultSet, dimension, index, dimensions) => {
-            const dimensionsToFetch = [
-              ...filteredRowDimensions.slice(0, index + 1),
-              ...columnDimensions,
-            ];
+          const dimensionsToFetch = [
+            ...filteredRowDimensions.slice(0, index + 1),
+            ...columnDimensions,
+          ];
 
-            return {
-              ...resultSet,
-              [`resultsDimension${index}`]: loadData({
-                from: inputs.ds,
-                dimensions: dimensionsToFetch.filter(
-                  (dimension) => dimension.nativeType !== 'time',
-                ),
-                measures: measures,
-                timeDimensions: dimensionsToFetch
-                  .filter((dimension) => dimension.nativeType === 'time')
-                  .map((timeDimension) => ({
-                    dimension: timeDimension.name,
-                    granularity: asGranularity(inputs.granularity),
-                  })),
-                orderBy: sort.slice(0, index + 1),
-                limit: 10_000,
-              }),
-            };
-          }, {})
-        : {
-            resultsDimension0: loadData({
+          return {
+            ...resultSet,
+            [`resultsDimension${index}`]: loadData({
               from: inputs.ds,
-              dimensions: [...(filteredRowDimensions || []), ...columnDimensions].filter(
+              dimensions: dimensionsToFetch.filter(
                 (dimension) => dimension.nativeType !== 'time',
               ),
-              timeDimensions: [...(filteredRowDimensions || []), ...columnDimensions]
+              measures: measures,
+              timeDimensions: dimensionsToFetch
                 .filter((dimension) => dimension.nativeType === 'time')
                 .map((timeDimension) => ({
                   dimension: timeDimension.name,
                   granularity: asGranularity(inputs.granularity),
                 })),
-              measures: measures,
+              orderBy: sort.slice(0, index + 1),
               limit: 10_000,
             }),
           };
+        }, {})
+        : {
+          resultsDimension0: loadData({
+            from: inputs.ds,
+            dimensions: [...(filteredRowDimensions || []), ...columnDimensions].filter(
+              (dimension) => dimension.nativeType !== 'time',
+            ),
+            timeDimensions: [...(filteredRowDimensions || []), ...columnDimensions]
+              .filter((dimension) => dimension.nativeType === 'time')
+              .map((timeDimension) => ({
+                dimension: timeDimension.name,
+                granularity: asGranularity(inputs.granularity),
+              })),
+            measures: measures,
+            limit: 10_000,
+          }),
+        };
 
     return {
       ...inputs,

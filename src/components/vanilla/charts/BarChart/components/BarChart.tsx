@@ -33,7 +33,7 @@ import { toDate } from 'date-fns';
  * PLUGINS
  ********************************************************************/
 const StringMetricPlugin = {
-  id: 'stringMetric',
+  id: 'stringMetric1',
   afterDraw(chart, args, options) {
     if (!options.enabled || !options.metrics?.length || !options.rawData) return;
 
@@ -54,6 +54,40 @@ const StringMetricPlugin = {
     // Position text in the middle at the very top of the canvas
     const xPos = chartArea.left + (chartArea.right - chartArea.left) / 2;
     const yPos = 20; // Fixed position from top of canvas
+
+    // Draw the text with capitalized first letter
+    ctx.font = `bold 12px ${ChartJS.defaults.font.family}`;
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#2D2D37'; // Keeping your dark gray color
+    ctx.fillText(stringValue, xPos, yPos);
+
+    ctx.restore();
+  }
+};
+
+
+const StringMetricPlugin2 = {
+  id: 'stringMetric2',
+  afterDraw(chart, args, options) {
+    if (!options.enabled || !options.metrics?.length || !options.rawData) return;
+
+    const { ctx, chartArea } = chart;
+
+    // Get the last metric
+    const lastMetric = options.metrics[options.metrics.length - 1];
+    if (!lastMetric?.name) return;
+
+    // Get the string value from the first data point and capitalize first letter
+    const rawValue = options.rawData[0]?.[lastMetric.name] || '';
+    const stringValue = rawValue.charAt(0).toUpperCase() + rawValue.slice(1);
+
+    if (!stringValue) return;
+
+    ctx.save();
+
+    // Position text in the middle at the very top of the canvas
+    const xPos = chartArea.left + (chartArea.right - chartArea.left) / 2;
+    const yPos = 6; // Fixed position from top of canvas
 
     // Draw the text with capitalized first letter
     ctx.font = `bold 12px ${ChartJS.defaults.font.family}`;
@@ -196,7 +230,8 @@ ChartJS.register(
   MonthHeaderPlugin,
   DateHeaderPlugin,
   TotalSeparatorPlugin,
-  StringMetricPlugin
+  StringMetricPlugin,
+  StringMetricPlugin2
 
 );
 
@@ -243,6 +278,13 @@ type Props = {
   Totalperformance?: boolean;
   KPIvalue?: string[];
   optimization?: boolean;
+  TrolleyBar?: boolean;
+  overview?: boolean;
+  edeka?: boolean;
+  Despar?: boolean;
+  edeka_hourgroup?: boolean;
+  master?: boolean;
+  masterUplift?: boolean;
   onToggleLabels?: (show: boolean) => void;
 };
 
@@ -252,7 +294,7 @@ type Props = {
  ********************************************************************/
 
 export default function BarChart({ ...props }: Props) {
-  const { clientContext, title, metrics, granularity, PercentageSign, AbsolutePercentage, impression, performance, KPIvalue, xAxis, Totalperformance } = props;
+  const { clientContext, title, metrics, granularity, PercentageSign, AbsolutePercentage, impression, performance, master, KPIvalue, xAxis, Totalperformance, edeka } = props;
   const language = clientContext?.language;
 
 
@@ -305,18 +347,24 @@ export default function BarChart({ ...props }: Props) {
       impression: props.impression,
       performance: props.performance,
       optimization: props.optimization,
+      TrolleyBar: props.TrolleyBar,
       showLabels: props.showLabels,
+      overview: props.overview,
+      edeka: props.edeka,
+      Despar: props.Despar,
+      master: props.master,
+      masterUplift: props.masterUplift
     });
 
     // Check if xAxis.name equals 'big_dm.weekday' and update the xAxis labels
     //if (props.xAxis.name === 'big_dm.weekday') {
-      // Define day names for Sunday to Saturday
-      //const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    // Define day names for Sunday to Saturday
+    //const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
-      // Modify xAxis tick callback to show day names
-      //updatedOptions.scales.x.ticks.callback = (value: number) => {
-        //return dayNames[value]; // Map 0 -> 'Sunday', 1 -> 'Monday', etc.
-      //};
+    // Modify xAxis tick callback to show day names
+    //updatedOptions.scales.x.ticks.callback = (value: number) => {
+    //return dayNames[value]; // Map 0 -> 'Sunday', 1 -> 'Monday', etc.
+    //};
     //}
 
 
@@ -342,8 +390,17 @@ export default function BarChart({ ...props }: Props) {
 
             formatter: (v: number) => {
               if (v === null) return '';
-              return Number.isInteger(v) ? `${v}%` : `${v.toFixed(2)}%`;
+              if (props.Despar) {
+                return Number.isInteger(v)
+                  ? `${v}%`
+                  : `${v.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`;
+              } else {
+                return Number.isInteger(v)
+                  ? `${v}%`
+                  : `${v.toFixed(2)}%`;
+              }
             }
+
 
 
           },
@@ -353,7 +410,13 @@ export default function BarChart({ ...props }: Props) {
         ...options.plugins?.tooltip,
         callbacks: {
           ...(options.plugins?.tooltip?.callbacks || {}),
-          label: (ctx: any) => `${ctx.raw.toFixed(2)}%`, // Rounds to 2 decimals
+          label: (ctx: any) => {
+            const value = ctx.raw;
+            return props.Despar
+              ? `${value.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`
+              : `${value.toFixed(2)}%`;
+          }
+
         },
       },
     };
@@ -364,7 +427,7 @@ export default function BarChart({ ...props }: Props) {
         // @ts-ignore dynamic access
         options.scales[axis].ticks = {
           ...(options.scales[axis].ticks || {}),
-          callback: (val: number | string) => `${Number(val).toFixed(2)}%`, // Rounds to 2 decimals
+          callback: (val: number | string) => `${Number(val)}%`, // Rounds to 2 decimals
         };
       }
     });
@@ -383,8 +446,11 @@ export default function BarChart({ ...props }: Props) {
 
             formatter: (v: number) => {
               if (v === null) return '';
-              return `$${v.toLocaleString('en-US')}`;
+              return props.Despar
+                ? `${v.toLocaleString('de-DE')} €`
+                : `$${v.toLocaleString('en-US')}`;
             }
+
 
           },
         },
@@ -439,7 +505,10 @@ export default function BarChart({ ...props }: Props) {
         ctx.fillStyle = '#000';
         ctx.textAlign = 'center';
 
-        let formattedTotal = total.toLocaleString("en-US");
+        let formattedTotal = props.Despar
+          ? total.toLocaleString("de-DE")
+          : total.toLocaleString("en-US");
+
 
         if (stackMetrics && KPIvalue?.includes('Sales in CLP$') && !AbsolutePercentage) {
           formattedTotal = `$${formattedTotal}`;
@@ -507,7 +576,10 @@ export default function BarChart({ ...props }: Props) {
           tooltipEl.style.opacity = '1';
 
           // Format the value based on conditions
-          let displayValue = hoveredTotal.value.toLocaleString("en-US");
+          let displayValue = props.Despar
+            ? hoveredTotal.value.toLocaleString("de-DE")
+            : hoveredTotal.value.toLocaleString("en-US");
+
           if (AbsolutePercentage) {
             displayValue += '%';
           } else if (stackMetrics && KPIvalue?.includes('Sales in CLP$')) {
@@ -564,33 +636,99 @@ export default function BarChart({ ...props }: Props) {
 
   const data = useMemo(() => chartData({ ...props, metrics: metrics.map((m, i) => ({ ...m, title: translatedMetrics[i] })) }), [props, translatedMetrics]);
 
+  const needsSmallBars = granularity === 'total' && data.labels.length > 700;
 
   return (
-    <Chart
-      type="bar"
-      height="100%"
-      options={{
-        ...options,
-        plugins: {
-          ...options.plugins,
-          stackedTotalPlugin: {
-            AbsolutePercentage: props.AbsolutePercentage,
-            KPIvalue: props.KPIvalue,
-            stackMetrics: props.stackMetrics// Or false based on your condition
-          },
-          totalSeparator: {
-            enabled: props.TotalStores
-          },
-          stringMetric: {
-            enabled: (props.performance && !props.stackMetrics) || props.optimization,
-            metrics: metrics,
-            rawData: props.results?.data || []
-          }
+    granularity === 'total' ? (
+      <div style={{
+        overflowX: 'scroll',
+        width: '100%',
+        // Scrollbar styling for better visibility (works in most modern browsers)
+        scrollbarWidth: 'thin',
+        scrollbarColor: '#888 #f1f1f1',
+        '&::-webkit-scrollbar': {
+          height: '8px',
+        },
+        '&::-webkit-scrollbar-track': {
+          background: '#f1f1f1',
+        },
+        '&::-webkit-scrollbar-thumb': {
+          backgroundColor: '#888',
+          borderRadius: '4px',
         }
-      }}
-      data={data}
-      plugins={props.stackMetrics ? [StackedTotalPlugin] : []}
-    />
+      }}>
+        <div style={{
+          minWidth: `${Math.max(data.labels.length, 30) * (needsSmallBars ? 10 : 60)}px`, // Reduced width for small bars
+          height: '400px',
+          willChange: 'transform' // Improves scrolling performance
+        }}>
+          <Chart
+            type="bar"
+            height="100%"
+            options={{
+              ...options,
+              animation: {
+                duration: 0 // Disable animations for better performance
+              },
+              plugins: {
+                ...options.plugins,
+                stackedTotalPlugin: {
+                  AbsolutePercentage: props.AbsolutePercentage,
+                  KPIvalue: props.KPIvalue,
+                  stackMetrics: props.stackMetrics
+                },
+                totalSeparator: {
+                  enabled: props.TotalStores
+                },
+                stringMetric1: {
+                  enabled: (props.performance && !props.stackMetrics) || (props.optimization && xAxis.name !== 'big_dm.name_market_type'),
+                  metrics: metrics,
+                  rawData: props.results?.data || []
+                },
+                stringMetric2: {
+                  enabled: (props.optimization && xAxis.name === 'big_dm.name_market_type'),
+                  metrics: metrics,
+                  rawData: props.results?.data || []
+                }
+              }
+            }}
+            data={data}
+            plugins={props.stackMetrics ? [StackedTotalPlugin] : []}
+          />
+        </div>
+      </div>
+    ) : (
+      <Chart
+        type="bar"
+        height="100%"
+        options={{
+          ...options,
+          plugins: {
+            ...options.plugins,
+            stackedTotalPlugin: {
+              AbsolutePercentage: props.AbsolutePercentage,
+              KPIvalue: props.KPIvalue,
+              stackMetrics: props.stackMetrics
+            },
+            totalSeparator: {
+              enabled: props.TotalStores
+            },
+            stringMetric1: {
+              enabled: (props.performance && !props.stackMetrics) || (props.optimization && xAxis.name !== 'big_dm.name_market_type') || props.masterUplift,
+              metrics: metrics,
+              rawData: props.results?.data || []
+            },
+            stringMetric2: {
+              enabled: (props.optimization && xAxis.name === 'big_dm.name_market_type'),
+              metrics: metrics,
+              rawData: props.results?.data || []
+            }
+          }
+        }}
+        data={data}
+        plugins={props.stackMetrics ? [StackedTotalPlugin] : []}
+      />
+    )
   );
 
 
@@ -624,11 +762,17 @@ function formatToWeekLabel(date: Date, performance: boolean, stackMetrics: boole
     ((monday.getTime() - firstISOWeekStart.getTime()) / 86400000) / 7 + 1
   );
 
-  const mondayFormatted = monday.toISOString().split('T')[0];
+  // Add one day to Monday
+  const mondayPlusOne = new Date(monday);
+  mondayPlusOne.setDate(mondayPlusOne.getDate() + 1);
+  const mondayFormatted = mondayPlusOne.toISOString().split('T')[0];
 
+  // Add one day to Sunday
   const sunday = new Date(monday);
   sunday.setDate(monday.getDate() + 6);
-  const sundayFormatted = sunday.toISOString().split('T')[0];
+  const sundayPlusOne = new Date(sunday);
+  sundayPlusOne.setDate(sundayPlusOne.getDate() + 1);
+  const sundayFormatted = sundayPlusOne.toISOString().split('T')[0];
 
   if (performance && !stackMetrics) {
     return `Week ${weekNumber} ${mondayFormatted} ${sundayFormatted}`;
@@ -693,6 +837,10 @@ function chartData(props: Props): ChartData<'bar' | 'line'> {
     selectedMetrics = metrics.slice(0, 2);
   }
 
+  if (props.masterUplift) {
+    selectedMetrics = metrics.slice(0, 1);
+  }
+
   if (KPIvalue?.includes('Units of Sales')) {
     selectedMetrics = metrics.slice(0, 2);  // Return first two metrics
   } else if (KPIvalue?.includes('Sales in CLP$')) {
@@ -709,6 +857,9 @@ function chartData(props: Props): ChartData<'bar' | 'line'> {
   }
   else if (KPIvalue?.includes('Conversion Uplift')) {
     selectedMetrics = metrics.slice(5, 6);  // Return next two metrics
+  }
+  else if (KPIvalue?.includes('Overview')) {
+    selectedMetrics = metrics.slice(0, 1);  // Return next two metrics
   }
 
   // ---- GROUPING LOGIC ---- //
@@ -745,13 +896,24 @@ function chartData(props: Props): ChartData<'bar' | 'line'> {
         case 'hour_group':
           {
             const h = rawDate.getHours();
-            if (h < 8 || h > 21) return;
-            if (h <= 10) label = '8:00 - 10:59';
-            else if (h <= 12) label = '11:00 - 12:59';
-            else if (h <= 14) label = '13:00 - 14:59';
-            else if (h <= 16) label = '15:00 - 16:59';
-            else if (h <= 18) label = '17:00 - 18:59';
-            else label = '19:00 - 21:59';
+            if (props.edeka_hourgroup) {
+              // edeka_hourgroup specific intervals
+              if (h < 7 || h >= 22) return;
+              if (h < 10) label = '7 - 10';
+              else if (h < 12) label = '10 - 12';
+              else if (h < 15) label = '12 - 15';
+              else if (h < 18) label = '15 - 18';
+              else label = '18 - 22';
+            } else {
+              // Original intervals
+              if (h < 8 || h > 21) return;
+              if (h <= 10) label = '8:00 - 10:59';
+              else if (h <= 12) label = '11:00 - 12:59';
+              else if (h <= 14) label = '13:00 - 14:59';
+              else if (h <= 16) label = '15:00 - 16:59';
+              else if (h <= 18) label = '17:00 - 18:59';
+              else label = '19:00 - 21:59';
+            }
           }
           break;
         case 'total':
@@ -759,9 +921,10 @@ function chartData(props: Props): ChartData<'bar' | 'line'> {
             const h = rawDate.getHours();
             if (h < 8 || h > 21) return;
             const date = rawDate.toISOString().slice(0, 10);
-            const hr = h.toString().padStart(2, '0');
+            const hr = h.toString(); // no padStart
             label = `${date} ${hr}`;
           }
+
           break;
 
         default:
@@ -798,28 +961,33 @@ function chartData(props: Props): ChartData<'bar' | 'line'> {
   /* ---------------------------------------------------------------- */
 
   /* ---------- FIX hour‑group label order --------------------------- */
-  if ((granularity === 'hour_group')) {
-    // desired fixed sequence
-    const desired = [
-      '8:00 - 10:59',
-      '11:00 - 12:59',
-      '13:00 - 14:59',
-      '15:00 - 16:59',
-      '17:00 - 18:59',
-      '19:00 - 21:59',
-    ];
+  if (granularity === 'hour_group') {
+    // desired fixed sequences
+    const desired = props.edeka_hourgroup
+      ? [
+        '7 - 10',
+        '10 - 12',
+        '12 - 15',
+        '15 - 18',
+        '18 - 22'
+      ]
+      : [
+        '8:00 - 10:59',
+        '11:00 - 12:59',
+        '13:00 - 14:59',
+        '15:00 - 16:59',
+        '17:00 - 18:59',
+        '19:00 - 21:59',
+      ];
 
     // build map from label → original index
     const idxMap: Record<string, number> = {};
     labels.forEach((lbl, i) => (idxMap[lbl] = i));
 
-    // new ordered labels – keep only those that actually exist
-    // new ordered labels – keep only those that actually exist, then REVERSE
-    const orderedLabels = desired
-      .filter((lbl) => lbl in idxMap)
-      .reverse();                    // ⬅️ inverse order
+    // new ordered labels - keep only those that actually exist
+    const orderedLabels = desired.filter((lbl) => lbl in idxMap).reverse();
 
-    // reorder each metric’s data to match new label order
+    // reorder each metric's data to match new label order
     perMetric.forEach((row, mi) => {
       const reordered = orderedLabels.map((lbl) => row[idxMap[lbl]]);
       perMetric[mi] = reordered;
@@ -827,7 +995,6 @@ function chartData(props: Props): ChartData<'bar' | 'line'> {
 
     // replace labels in place
     labels.splice(0, labels.length, ...orderedLabels);
-
   }
 
   /**if ((xAxis.name === 'big_dm.hour_group')) {

@@ -7,7 +7,7 @@ export const meta = {
   name: 'DynamicAxisBar',
   label: 'Dynamic-axis bar chart',
   classNames: ['inside-card'],
-  category: 'Misc',
+  category: 'Embeddable Components',
   inputs: [
     {
       name: 'ds',

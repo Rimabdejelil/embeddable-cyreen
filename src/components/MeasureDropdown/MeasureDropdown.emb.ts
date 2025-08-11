@@ -5,6 +5,7 @@ import DropdownMeasureNames from '.';
 export const meta: EmbeddedComponentMeta = {
     name: 'MeasureDropdown',
     label: 'Measure dropdown',
+    category: 'Cyreen Components',
     defaultWidth: 320,
     defaultHeight: 80,
     inputs: [
@@ -27,6 +28,12 @@ export const meta: EmbeddedComponentMeta = {
             type: 'string',
             label: 'Default value',
             description: 'Initial value',
+        },
+        {
+            name: 'placeholder',
+            type: 'string',
+            label: 'Place Holder',
+            description: 'Place holder',
         },
     ],
     events: [
@@ -59,9 +66,11 @@ export default defineComponent<Inputs>(DropdownMeasureNames, meta, {
     props: (inputs) => {
         // Safely handle if inputs.values is null or undefined
         const measureNames = (inputs.values ?? []).map(measure => measure.name);
+        const measureTitles = (inputs.values ?? []).map(measure => measure.title);
         return {
             ...inputs,
             measureNames,
+            measureTitles
         };
     },
     events: {

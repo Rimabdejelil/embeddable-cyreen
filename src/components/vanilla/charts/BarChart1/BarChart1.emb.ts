@@ -5,9 +5,9 @@ import Component from './index';
 
 export const meta = {
     name: 'BarChart1',
-    label: 'Bar chart',
+    label: 'Bar chart (dynamic axis)',
     classNames: ['inside-card'],
-    category: 'Charts: essentials',
+    category: 'Cyreen Components',
     inputs: [
         {
             name: 'ds',
@@ -44,6 +44,65 @@ export const meta = {
             category: 'Configure chart'
         },
         {
+            name: 'InstoreDuration',
+            type: 'boolean',
+            label: 'Instore Duration',
+            description: 'First Bar Chart',
+            category: 'Configure chart'
+        },
+
+        {
+            name: 'InstoreDuration2',
+            type: 'boolean',
+            label: 'Instore Duration2',
+            description: 'Second Bar Chart',
+            category: 'Configure chart'
+        },
+        {
+            name: 'Overview',
+            type: 'boolean',
+            label: 'Overview',
+            description: 'overview',
+            category: 'Configure chart'
+        },
+        {
+            name: 'Master',
+            type: 'boolean',
+            label: 'Master',
+            description: 'Master',
+            category: 'Configure chart'
+        },
+        {
+            name: 'MasterLines',
+            type: 'boolean',
+            label: 'Master Lines',
+            description: 'Master Lines',
+            category: 'Configure chart'
+        },
+        {
+            name: 'MasterRetail',
+            type: 'boolean',
+            label: 'Master Retail',
+            description: 'Master Retail',
+            defaultValue: false,
+            category: 'Configure chart'
+        },
+        {
+            name: 'displayYaxis',
+            type: 'boolean',
+            label: 'display Y-axis',
+            defaultValue: 'true',
+            category: 'Chart settings',
+        },
+        {
+            name: 'displayXaxis',
+            type: 'boolean',
+            label: 'display X-axis',
+            defaultValue: 'true',
+            category: 'Chart settings',
+        },
+
+        {
             name: 'sortBy',
             type: 'string',
             label: 'Sort by (optional)',
@@ -60,7 +119,7 @@ export const meta = {
         },
         {
             name: 'lineMetrics',
-            type: 'measure',
+            type: 'dimensionOrMeasure',
             array: true,
             label: 'Add a line(s)',
             config: {
@@ -125,12 +184,76 @@ export const meta = {
             defaultValue: false,
         },
         {
+            name: 'PercentageSign',
+            type: 'boolean',
+            label: 'Show Percentage Sign',
+            category: 'Chart settings',
+            defaultValue: false,
+        },
+        {
+            name: 'TrolleyUsage',
+            type: 'boolean',
+            label: 'Trolley Usage',
+            category: 'Chart settings',
+            defaultValue: false,
+        },
+        {
+            name: 'Profitability',
+            type: 'boolean',
+            label: 'Profitability',
+            category: 'Chart settings',
+            defaultValue: false,
+        },
+        {
+            name: 'Profitability2',
+            type: 'boolean',
+            label: 'Profitability2',
+            category: 'Chart settings',
+            defaultValue: false,
+        },
+        {
+            name: 'Despar',
+            type: 'boolean',
+            label: 'Despar',
+            category: 'Chart settings',
+            defaultValue: false,
+        },
+        {
+            name: 'GeneralKPIs',
+            type: 'boolean',
+            label: 'GeneralKPIs',
+            category: 'Chart settings',
+            defaultValue: false,
+        },
+        {
+            name: 'MarketingActivities',
+            type: 'boolean',
+            label: 'MarketingActivities',
+            category: 'Chart settings',
+            defaultValue: false,
+        },
+        {
+            name: 'AbsolutePercentage',
+            type: 'boolean',
+            label: 'Absolute Percentage',
+            category: 'Chart settings',
+            defaultValue: false,
+        },
+        {
             name: 'reverseXAxis',
             type: 'boolean',
             label: 'Reverse X Axis',
             category: 'Chart settings',
             defaultValue: false,
         },
+        {
+            name: 'sortDirection',
+            type: 'string',
+            label: 'Sort direction',
+            category: 'Chart data',
+            defaultValue: 'asc',
+        },
+
         {
             name: 'xAxisTitle',
             type: 'string',
@@ -173,7 +296,7 @@ export default defineComponent(Component, meta, {
         if (inputs.sortBy) {
             orderProp.push({
                 property: asMeasure(inputs.sortBy),
-                direction: 'asc',
+                direction: (inputs.sortDirection === 'desc') ? 'desc' : 'asc',
             });
         } else if (inputs.limit) {
             orderProp.push({
@@ -182,18 +305,40 @@ export default defineComponent(Component, meta, {
             });
         }
 
+        const lineDimensions = (inputs.lineMetrics || []).filter(
+            (item) => item?.__type__ === 'dimension'
+        );
+        const lineMeasures = (inputs.lineMetrics || []).filter(
+            (item) => item?.__type__ !== 'dimension'
+        );
+
+        // Transform xAxis if MarketingActivities is true
+        let xAxisName = inputs.xAxis;
+        if (inputs.MarketingActivities) {
+            const xAxisTransformMap: Record<string, string> = {
+                'Other': 'big_dm.activity_4',
+                'Discount': 'big_dm.activity_1',
+                'Second placement': 'big_dm.activity_2',
+                'Regal Wochen': 'big_dm.activity_3',
+                'Design Edition': 'big_dm.activity_5',
+            };
+
+            xAxisName = xAxisTransformMap[inputs.xAxis] ?? inputs.xAxis;
+        }
+
         return {
             ...inputs,
             reverseXAxis: inputs.reverseXAxis,
             results: loadData({
                 from: inputs.ds,
-                dimensions: [asDimension(inputs.xAxis)],
-                measures: [...inputs.metrics, ...(inputs.lineMetrics || [])],
+                dimensions: [asDimension(xAxisName), ...lineDimensions.map(asDimension)],
+                measures: [...inputs.metrics, ...lineMeasures.map(asMeasure)],
                 orderBy: orderProp,
                 limit: inputs.limit || 50,
             }),
         };
     },
+
 });
 
 function asDimension(valueDimension: string | any): any {

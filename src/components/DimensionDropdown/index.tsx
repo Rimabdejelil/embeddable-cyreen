@@ -11,15 +11,26 @@ type Props = {
     placeholder?: string;
     defaultXAxis?: string;
     defaultYAxis?: string;
+    InstoreDuration?: boolean;  // Changed from string to boolean
 };
 
-const DropdownDimensionNames = ({ 
-    dimensions, 
-    onChange, 
-    placeholder, 
-    defaultXAxis = "impressions.weekday", 
-    defaultYAxis = "impressions.week" 
+const DropdownDimensionNames = ({
+    dimensions,
+    onChange,
+    placeholder,
+    InstoreDuration,
+    defaultXAxis = "impressions.weekday",
+    defaultYAxis = "impressions.week"
 }: Props) => {
+    // Set defaults based on InstoreDuration
+    const resolvedDefaultXAxis = InstoreDuration
+        ? "customer_journeys.month"
+        : defaultXAxis;
+
+    const resolvedDefaultYAxis = InstoreDuration
+        ? "customer_journeys.weekday"
+        : defaultYAxis;
+
     const [selectedName, setSelectedName] = useState('');
     const [displayValue, setDisplayValue] = useState('');
 
@@ -33,12 +44,12 @@ const DropdownDimensionNames = ({
 
     const handleChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
         const newValue = event.target.value;
-        
+
         if (newValue === "RESET_PLACEHOLDER") {
             // Reset to default values based on placeholder
-            const defaultValue = placeholder === "Select X-axis..." ? defaultXAxis : 
-                              placeholder === "Select Y-axis..." ? defaultYAxis : '';
-            
+            const defaultValue = placeholder === "Select X-axis..." ? resolvedDefaultXAxis :
+                placeholder === "Select Y-axis..." ? resolvedDefaultYAxis : '';
+
             setSelectedName(defaultValue);
             setDisplayValue(''); // This will show the placeholder
             onChange(defaultValue);
@@ -55,7 +66,7 @@ const DropdownDimensionNames = ({
                 <select
                     value={displayValue}
                     onChange={handleChange}
-                    onPointerDown={e => e.stopPropagation()}   
+                    onPointerDown={e => e.stopPropagation()}
                     className={`dropdown ${!displayValue ? 'placeholder' : ''}`}
                 >
                     <option value="" disabled hidden>

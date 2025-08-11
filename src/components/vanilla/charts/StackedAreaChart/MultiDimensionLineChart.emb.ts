@@ -7,7 +7,7 @@ export const meta = {
   name: 'MultiDimensionLineChart',
   label: 'Grouped line chart (time-series)',
   classNames: ['inside-card'],
-  category: 'Charts: time-series',
+  category: 'Embeddable Components',
   inputs: [
     {
       name: 'ds',

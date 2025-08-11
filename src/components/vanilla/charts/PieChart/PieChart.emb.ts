@@ -7,7 +7,7 @@ export const meta = {
   name: 'PieChart',
   label: 'Pie chart',
   classNames: ['inside-card'],
-  category: 'Charts: essentials',
+  category: 'Cyreen Components',
   inputs: [
     {
       name: 'ds',
@@ -69,6 +69,22 @@ export const meta = {
       defaultValue: false,
       category: 'Chart settings',
     },
+    {
+      name: 'AbsolutePercentage',
+      type: 'boolean',
+      label: 'Absolute/Percentage',
+      description: 'Absolute/Percentage',
+      category: 'Configure chart',
+      defaultValue: false
+    },
+    {
+      name: 'Despar',
+      type: 'boolean',
+      label: 'Despar',
+      category: 'Chart settings',
+      defaultValue: false,
+    },
+
     {
       name: 'displayAsPercentage',
       type: 'boolean',

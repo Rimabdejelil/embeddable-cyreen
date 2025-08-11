@@ -6,6 +6,7 @@ import DropdownDimensionNames from './index';
 export const meta: EmbeddedComponentMeta = {
     name: 'DimensionDropdown',
     label: 'Dimension dropdown',
+    category: 'Cyreen Components',
     defaultWidth: 320,
     defaultHeight: 80,
     inputs: [
@@ -28,6 +29,12 @@ export const meta: EmbeddedComponentMeta = {
             type: 'string',
             label: 'Default value',
             description: 'Initial value',
+        },
+        {
+            name: 'InstoreDuration',
+            type: 'boolean',
+            label: 'Instore Duration',
+            description: 'Instore Duration',
         },
         {
             name: 'placeholder',

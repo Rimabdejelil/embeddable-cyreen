@@ -1,8 +1,13 @@
 cubes:
   - name: customer_journeys
     title: Customer Journeys
-    sql_table: public.customer_journeys
     data_source: my-db
+    sql: >
+     SELECT * 
+      FROM public.customer_journeys  
+      {% if COMPILE_CONTEXT.securityContext.number_root %}  
+        WHERE number_root = '{ COMPILE_CONTEXT.securityContext.number_root }'
+      {% endif %}
 
     dimensions:
       - name: id_customer_journey
@@ -22,12 +27,28 @@ cubes:
         sql: TO_CHAR(date::DATE, 'FMMonth')  
         type: string 
 
+      - name: month1
+        sql: TRIM(TO_CHAR(date::DATE, 'Month')) || ' ' || EXTRACT(YEAR FROM date::DATE)
+        type: string
+
       - name: week
         sql: week
         type: number
 
+      #- name: dow
+       # sql: dow
+        #type: number
+
       - name: dow
-        sql: dow
+        sql: CASE EXTRACT(DOW FROM date::DATE)
+            WHEN 0 THEN 'Sunday'
+            WHEN 1 THEN 'Monday'
+            WHEN 2 THEN 'Tuesday'
+            WHEN 3 THEN 'Wednesday'
+            WHEN 4 THEN 'Thursday'
+            WHEN 5 THEN 'Friday'
+            WHEN 6 THEN 'Saturday'
+          END
         type: number
 
       - name: hour
@@ -204,45 +225,298 @@ cubes:
         sql: CASE WHEN EXTRACT(DOW FROM date::DATE) = 0 THEN 7 ELSE EXTRACT(DOW FROM date::DATE) END
         type: number
 
+      
 
-      - name: duration_group_minutes
+
+      
+      
+      - name: duration_group_five
         type: number
         sql: |
           CASE 
-            WHEN NULLIF((duration), '') IS NULL THEN NULL
+            WHEN NULLIF((duration), '') IS NULL THEN 0  
             ELSE 
-        
-              CEIL(
-                (
-                  (EXTRACT(HOUR FROM CAST((duration) AS TIME)) * 60 + 
-                  EXTRACT(MINUTE FROM CAST((duration) AS TIME)) + 
-                  EXTRACT(SECOND FROM CAST((duration) AS TIME)) / 60.0
-                  - 1  
-                 ) / 5
-              ) * 5
+              CASE 
+                WHEN (EXTRACT(HOUR FROM CAST((duration) AS TIME)) * 60 + 
+                      EXTRACT(MINUTE FROM CAST((duration) AS TIME)) + 
+                      EXTRACT(SECOND FROM CAST((duration) AS TIME)) / 60.0) < 5 THEN 0  
+                ELSE
+                  FLOOR(
+                    (EXTRACT(HOUR FROM CAST((duration) AS TIME)) * 60 + 
+                    EXTRACT(MINUTE FROM CAST((duration) AS TIME)) + 
+                    EXTRACT(SECOND FROM CAST((duration) AS TIME)) / 60.0) / 5
+                ) * 5
+              END
           END
 
+
+      - name: duration_group_ten
+        type: number
+        sql: |
+          CASE 
+            WHEN NULLIF((duration), '') IS NULL THEN 0
+            ELSE 
+              CASE 
+                WHEN (EXTRACT(HOUR FROM CAST((duration) AS TIME)) * 60 + 
+                      EXTRACT(MINUTE FROM CAST((duration) AS TIME)) + 
+                      EXTRACT(SECOND FROM CAST((duration) AS TIME)) / 60.0) < 10 THEN 0
+                ELSE 
+                  FLOOR(
+                    (EXTRACT(HOUR FROM CAST((duration) AS TIME)) * 60 + 
+                    EXTRACT(MINUTE FROM CAST((duration) AS TIME)) + 
+                    EXTRACT(SECOND FROM CAST((duration) AS TIME)) / 60.0) / 10
+                  ) * 10
+            END
+          END
+
+      - name: duration_group_fifteen
+        type: number
+        sql: |
+          CASE 
+            WHEN NULLIF((duration), '') IS NULL THEN 0
+            ELSE 
+              CASE 
+                WHEN (EXTRACT(HOUR FROM CAST((duration) AS TIME)) * 60 + 
+                      EXTRACT(MINUTE FROM CAST((duration) AS TIME)) + 
+                      EXTRACT(SECOND FROM CAST((duration) AS TIME)) / 60.0) < 15 THEN 0
+                ELSE 
+                  FLOOR(
+                    (EXTRACT(HOUR FROM CAST((duration) AS TIME)) * 60 + 
+                    EXTRACT(MINUTE FROM CAST((duration) AS TIME)) + 
+                    EXTRACT(SECOND FROM CAST((duration) AS TIME)) / 60.0) / 15
+                  ) * 15
+            END
+          END
+
+
+      - name: duration_group_thirty
+        type: number
+        sql: |
+          CASE 
+            WHEN NULLIF((duration), '') IS NULL THEN 0
+            ELSE 
+              CASE 
+                WHEN (EXTRACT(HOUR FROM CAST((duration) AS TIME)) * 60 + 
+                      EXTRACT(MINUTE FROM CAST((duration) AS TIME)) + 
+                      EXTRACT(SECOND FROM CAST((duration) AS TIME)) / 60.0) < 30 THEN 0
+                ELSE 
+                  FLOOR(
+                    (EXTRACT(HOUR FROM CAST((duration) AS TIME)) * 60 + 
+                    EXTRACT(MINUTE FROM CAST((duration) AS TIME)) + 
+                    EXTRACT(SECOND FROM CAST((duration) AS TIME)) / 60.0) / 30
+                  ) * 30
+            END
+          END
+
+      - name: duration_group_sixty
+        type: number
+        sql: |
+          CASE 
+            WHEN NULLIF((duration), '') IS NULL THEN 0
+            ELSE 
+              CASE 
+                WHEN (EXTRACT(HOUR FROM CAST((duration) AS TIME)) * 60 + 
+                      EXTRACT(MINUTE FROM CAST((duration) AS TIME)) + 
+                      EXTRACT(SECOND FROM CAST((duration) AS TIME)) / 60.0) < 60 THEN 0
+                ELSE 
+                  FLOOR(
+                    (EXTRACT(HOUR FROM CAST((duration) AS TIME)) * 60 + 
+                    EXTRACT(MINUTE FROM CAST((duration) AS TIME)) + 
+                    EXTRACT(SECOND FROM CAST((duration) AS TIME)) / 60.0) / 60
+                  ) * 60
+            END
+          END
+
+
     measures:
+
+      - name: month_sort
+        sql: |
+          STRING_AGG(
+            DISTINCT 
+            (EXTRACT(YEAR FROM date::DATE)::INT * 100 + EXTRACT(MONTH FROM date::DATE)::INT)::TEXT, 
+            ', '
+          )
+        type: string
+        title: "month sort"
+
+      - name: weekday_agg_string
+        sql: |
+          STRING_AGG(
+            DISTINCT 
+            CASE 
+              WHEN EXTRACT(DOW FROM date::DATE) = 0 THEN '7' 
+              ELSE CAST(EXTRACT(DOW FROM date::DATE) AS VARCHAR) 
+            END, 
+            ', '
+          )
+        type: string
+        title: "Weekdays (Aggregated)"
+
       - name: average
         type: number
         sql: ROUND(AVG(difference_min))
-        title: "Average"
+        title: "Average Duration"
+
+      - name: average_duration
+        type: number
+        sql: ROUND(AVG(difference_min))
+        title: "Average Duration"
 
 
       - name: average_sales
         type: number
-        sql: "SUM(sales) / COUNT(DISTINCT (number_receipt_identifier))"
+        sql: "(SUM(sales)) * 1.0 / COUNT(DISTINCT (number_receipt_identifier))"
         title: "Average Sales"
 
       - name: average_revenue
         type: number
-        sql: "SUM(revenue) /  COUNT(DISTINCT (number_receipt_identifier))"
+        sql: "(SUM(revenue)) *1.0 /  COUNT(DISTINCT (number_receipt_identifier))"
         title: "Average Revenue"
 
       - name: average_shopper
         type: number
         sql: "COUNT(DISTINCT (number_receipt_identifier))"
+        title: "Average Shopper"
+
+      - name: average_shoppers
+        type: number
+        sql: "COUNT(DISTINCT (number_receipt_identifier))"
         title: "Average Shoppers"
+
+
+      - name: average_shopper_percentage
+        type: number
+        sql: "(COUNT(DISTINCT number_receipt_identifier) * 100.0) / NULLIF(SUM(COUNT(DISTINCT number_receipt_identifier)) OVER (), 0)"
+        title: "Average Shopper (%)"
+
+      - name: average_shopper_percentage_rounded
+        type: number
+        sql: "ROUND({average_shopper_percentage},1)"
+        title: "Average Shopper (%)"
+
+        ##########optimization
+
+
+      - name: sum_sales
+        type: sum
+        sql: sales
+        title: "Sales"
+
+      - name: sum_revenue
+        type: sum
+        sql: revenue
+        title: "Revenue"
+
+      - name: shoppers
+        type: number
+        sql: "COUNT(DISTINCT (number_receipt_identifier))"
+        title: "Shoppers"
+
+
+      - name: duration_amount
+        type: number
+        sql: ROUND(AVG(difference_min))
+        title: "Duration"
+
+
+
+        ######### Trolley Usage ############
+
+
+      - name: trolley_quote_used
+        type: number
+        sql: "COUNT(DISTINCT number_tag) * 1.0 / MAX(installed_trolleys)"
+        title: "Trolley Quote Used"
+
+
+      - name: trolley_quote_used_max_100_percent
+        type: number
+        sql: |
+          CASE 
+            WHEN {trolley_quote_used} < 1 THEN {trolley_quote_used}
+            ELSE 1
+          END
+        title: "Trolley Quote Used (Capped at 100%)"
+
+      - name: trolley_quote_used_percent
+        type: number
+        sql: "ROUND(({trolley_quote_used_max_100_percent} * 100),0)"
+        title: "Trolley Ratio (%)"
+
+      
+      - name: trolley_quote_unused_max_100_percent
+        type: number
+        sql: "1-({trolley_quote_used_max_100_percent})"
+        title: "Trolley Quote Unused (Capped at 100%)"
+
+
+      - name: trolley_quote_unused_percent
+        type: number
+        sql: "ROUND((({trolley_quote_unused_max_100_percent}) * 100),0)"
+        title: "Trolley Quote Unused Percent"
+
+
+      - name: trolley_used_absolute
+        type: number
+        sql: "COUNT(DISTINCT (number_tag))"
+        title: "Trolley Used Absolute"
+
+
+      - name: trolley_used_absolute_max_limit
+        type: number
+        sql: |
+          CASE 
+            WHEN {trolley_used_absolute} < MAX(installed_trolleys) THEN {trolley_used_absolute}
+            ELSE MAX(installed_trolleys)
+          END
+        title: "Trolley Used Absolute Max Limit"
+
+
+      - name: trolley_Unused_absolute
+        type: number
+        sql: "MAX(installed_trolleys) - (COUNT(DISTINCT (number_tag)))"
+        title: "Trolley Unused Absolute"
+
+      - name: trolley_Unused_absolute_not_minus
+        type: number
+        sql: |
+          CASE 
+            WHEN {trolley_Unused_absolute} < 0 THEN 0
+            ELSE {trolley_Unused_absolute}
+          END
+        title: "Trolley Unused Absolute Not Minus"
+
+
+      - name : store_name
+        sql: "STRING_AGG(DISTINCT name_store, ', ')"
+        type: string
+        title: "Store Name"
+
+    
+    pre_aggregations:
+      - name: customer_journeys_summary
+        dimensions:
+          - customer_journeys.duration_group_five
+          
+        measures:
+          - customer_journeys.average_sales
+          - customer_journeys.average_revenue
+          - customer_journeys.average_shopper
+          - customer_journeys.average_shopper_percentage_rounded
+          - customer_journeys.average_shoppers
+
+
+
+          
+
+
+      
+
+
+      
+
+
 
 
       

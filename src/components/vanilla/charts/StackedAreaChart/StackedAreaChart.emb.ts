@@ -7,7 +7,7 @@ export const meta = {
   name: 'StackedAreaChart',
   label: 'Stacked area chart (time-series)',
   classNames: ['inside-card'],
-  category: 'Charts: time-series',
+  category: 'Embeddable Components',
   inputs: [
     {
       name: 'ds',

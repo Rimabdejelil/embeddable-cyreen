@@ -6,6 +6,7 @@ import Component from './index';
 export const meta = {
   name: 'KPIChartHighestAverage',
   label: 'KPI Highest Average',
+  category: 'Cyreen Components',
   inputs: [
     {
       name: 'ds',

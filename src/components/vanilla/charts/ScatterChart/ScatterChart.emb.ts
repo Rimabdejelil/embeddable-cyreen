@@ -7,7 +7,7 @@ export const meta = {
   name: 'ScatterChart',
   label: 'Scatter chart',
   classNames: ['inside-card'],
-  category: 'Charts: essentials',
+  category: 'Embeddable Components',
   inputs: [
     {
       name: 'ds',

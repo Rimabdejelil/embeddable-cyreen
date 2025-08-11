@@ -1,11 +1,9 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { DataResponse, Measure } from '@embeddable.com/core';
 import { translateText } from '../translateText';
+import DownloadMenu from '../DownloadMenu';
 
-// ------------------------------------------------------------------
-// TYPES
-// ------------------------------------------------------------------
 interface Props {
     title?: string;
     metrics?: Measure[];
@@ -13,22 +11,29 @@ interface Props {
     clientContext?: {
         language?: string;
     };
+    enableDownloadAsCSV?: boolean;
+    enableDownloadAsPNG?: boolean;
+    MasterRetail?: boolean;
 }
 
-// ------------------------------------------------------------------
-// COMPONENT
-// ------------------------------------------------------------------
-export default function SingleNumberCard({ title, metrics, results, clientContext }: Props) {
+export default (props: Props) => {
+    const {
+        title, metrics, results, clientContext,
+        enableDownloadAsCSV,
+        enableDownloadAsPNG, MasterRetail
+    } = props;
     const { isLoading, data } = results;
 
-    // ----------------------------------------------------------------
-    // TRANSLATIONS
-    // ----------------------------------------------------------------
+    // Translations
     const [translatedTitle, setTranslatedTitle] = useState<string | undefined>(title);
     const [translatedUplift, setTranslatedUplift] = useState<string>('Uplift');
     const [translatedDailyAverage, setTranslatedDailyAverage] = useState<string>('Daily Average');
     const [translatedShopperAverage, setTranslatedShopperAverage] = useState<string>('Shopper Average');
     const [showTooltip, setShowTooltip] = useState(false);
+    const [isOverDownloadMenu, setIsOverDownloadMenu] = useState(false);
+
+    const chartRef = useRef<HTMLDivElement>(null);
+    const [preppingDownload, setPreppingDownload] = useState(false);
 
     useEffect(() => {
         if (!clientContext?.language) return;
@@ -40,23 +45,18 @@ export default function SingleNumberCard({ title, metrics, results, clientContex
                 setTranslatedDailyAverage(await translateText('Daily Average', clientContext.language));
                 setTranslatedShopperAverage(await translateText('Shopper Average', clientContext.language));
             } catch (err) {
-                // graceful degradation – keep original strings
-                /* eslint-disable-next-line no-console */
                 console.error('Translation failed', err);
             }
         })();
     }, [title, clientContext?.language]);
 
-    // ----------------------------------------------------------------
-    // DATA EXTRACTION AND FORMATTING
-    // ----------------------------------------------------------------
+    // Data extraction and formatting
     const firstMetric = metrics?.[0];
     const secondMetric = metrics?.[1];
 
     const firstRaw = firstMetric ? +data?.[0]?.[firstMetric.name] : undefined;
     const secondRaw = secondMetric ? +data?.[0]?.[secondMetric.name] : undefined;
 
-    // Format first value with K suffix (e.g., 3,428K)
     const formatFirstValue = () => {
         if (!Number.isFinite(firstRaw)) return 'No data';
 
@@ -66,46 +66,80 @@ export default function SingleNumberCard({ title, metrics, results, clientContex
 
         switch (title) {
             case 'Total Revenue':
-                return `CLP$ ${formattedNumber}`;
+                if (MasterRetail) {
+                    return `${formattedNumber} €`
+                } else {
+                    return `CLP$ ${formattedNumber}`
+                };
             case 'Total Sales':
                 return `${formattedNumber} units`;
-            default: // Total Shoppers and others
+            default:
                 return formattedNumber;
         }
     };
 
-    // Format second value with commas (no K suffix)
     const formatSecondValue = () => {
         if (!Number.isFinite(secondRaw)) return 'No data';
 
         const numValue = secondRaw as number;
-        const formattedNumber = numValue.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+
+        let formatted: string;
+
+        if (title === 'Total Sales') {
+            // For Total Sales, always round to nearest whole number
+            formatted = Math.round(numValue).toLocaleString('en-US');
+        } else if (numValue < 1000) {
+            // For other cases with small numbers, show 2 decimals
+            formatted = numValue.toFixed(2).replace('.', ',');
+        } else {
+            // For other cases with large numbers, round to nearest whole number
+            formatted = Math.round(numValue).toLocaleString('en-US');
+        }
 
         switch (title) {
             case 'Total Revenue':
-                return `CLP$ ${formattedNumber}`;
+                if (MasterRetail) {
+                    return `${formatted} €`
+                } else {
+                    return `CLP$ ${formatted}`
+                };
             case 'Total Sales':
-                return `${formattedNumber} units`;
-            default: // Total Shoppers and others
-                return formattedNumber;
+                return `${formatted} units`;
+            default:
+                return formatted;
         }
     };
 
-    // Get second value title based on main title
+
     const getSecondValueTitle = () => {
         switch (title) {
             case 'Total Revenue':
                 return translatedShopperAverage;
             case 'Total Sales':
                 return translatedShopperAverage;
-            default: // Total Shoppers and others
+            default:
                 return translatedDailyAverage;
         }
     };
 
-    // ----------------------------------------------------------------
-    // TOOLTIP CONTENT
-    // ----------------------------------------------------------------
+    const handleMouseEnter = (e: React.MouseEvent) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const yPos = e.clientY - rect.top;
+        setShowTooltip(yPos > 20 && !isOverDownloadMenu);
+    };
+
+    const handleMouseMove = (e: React.MouseEvent) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const yPos = e.clientY - rect.top;
+
+        setMousePos({
+            x: e.clientX - rect.left,
+            y: yPos,
+        });
+
+        setShowTooltip(yPos > 20 && !isOverDownloadMenu);
+    };
+
     const getTooltipContent = () => {
         if (!Number.isFinite(firstRaw) || !Number.isFinite(secondRaw)) return null;
 
@@ -117,12 +151,10 @@ export default function SingleNumberCard({ title, metrics, results, clientContex
                 return (
                     <div style={{ fontFamily: 'Arial', fontSize: '12px', color: '#000' }}>
                         <div>
-                            Total revenue spent by shoppers{' '}
-                            <span style={{ color: '#a53241', fontWeight: 'bold' }}>{firstFormatted}</span>.
+                            Total revenue collected: <span style={{ color: '#a53241', fontWeight: 'bold' }}>{firstFormatted}</span>.
                         </div>
                         <div>
-                            On average, each shopper spent{' '}
-                            <span style={{ color: '#a53241', fontWeight: 'bold' }}>{secondFormatted}</span>.
+                            Average revenue per shopper: <span style={{ color: '#a53241', fontWeight: 'bold' }}>{secondFormatted}</span>.
                         </div>
                     </div>
                 );
@@ -130,30 +162,27 @@ export default function SingleNumberCard({ title, metrics, results, clientContex
                 return (
                     <div style={{ fontFamily: 'Arial', fontSize: '12px', color: '#000' }}>
                         <div>
-                            Total number of units bought by shopper{' '}
-                            <span style={{ color: '#a53241', fontWeight: 'bold' }}>{firstFormatted}</span>.
+                            Total items bought: <span style={{ color: '#a53241', fontWeight: 'bold' }}>{firstFormatted}</span>.
                         </div>
                         <div>
-                            On average, each shopper bought{' '}
-                            <span style={{ color: '#a53241', fontWeight: 'bold' }}>{secondFormatted}</span>.
+                            Average items per shopper: <span style={{ color: '#a53241', fontWeight: 'bold' }}>{secondFormatted}</span>.
                         </div>
                     </div>
                 );
-            default: // Total Shoppers
+            default:
                 return (
                     <div style={{ fontFamily: 'Arial', fontSize: '12px', color: '#000' }}>
                         <div>
-                            Total number of shoppers visited the selected stores{' '}
-                            <span style={{ color: '#a53241', fontWeight: 'bold' }}>{firstFormatted}</span>.
+                            Shoppers who visited the selected stores: <span style={{ color: '#a53241', fontWeight: 'bold' }}>{firstFormatted}</span>.
                         </div>
                         <div>
-                            On average per day,{' '}
-                            <span style={{ color: '#a53241', fontWeight: 'bold' }}>{secondFormatted}</span>{' '}
-                            shoppers were inside the selected stores.
+                            Average shoppers per day: <span style={{ color: '#a53241', fontWeight: 'bold' }}>{secondFormatted}</span>.
                         </div>
                     </div>
                 );
         }
+
+
     };
 
     const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
@@ -161,30 +190,86 @@ export default function SingleNumberCard({ title, metrics, results, clientContex
 
     return (
         <div
+            ref={(el) => {
+                chartRef.current = el;
+                if (el) {
+                    const { width } = el.getBoundingClientRect();
+                    setContainerWidth(width);
+                }
+            }}
             style={{
                 border: '1px solid #ccc',
                 padding: '15px',
                 borderRadius: '8px',
                 boxShadow: '0 0 10px rgba(0, 0, 0, 0.15)',
                 position: 'relative',
-                minHeight: '150px' // Added to ensure consistent card height
+                height: '100%',
+                backgroundColor: title === 'Smart Stores' ? '#AF3241' : 'white'
             }}
-            onMouseEnter={() => setShowTooltip(true)}
-            onMouseLeave={() => setShowTooltip(false)}
-            onMouseMove={(e) => {
-                const rect = e.currentTarget.getBoundingClientRect();
-                setMousePos({
-                    x: e.clientX - rect.left,
-                    y: e.clientY - rect.top,
-                });
-            }}
-            ref={(el) => {
-                if (el) {
-                    const { width } = el.getBoundingClientRect();
-                    setContainerWidth(width);
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={() => {
+                // Only hide tooltip if not over download menu
+                if (!isOverDownloadMenu) {
+                    setShowTooltip(false);
                 }
             }}
+            onMouseMove={handleMouseMove}
         >
+
+            {/* Download Menu - with mouse event handlers */}
+            {(enableDownloadAsCSV || enableDownloadAsPNG) && (
+                <div
+                    style={{
+                        position: 'absolute',
+                        top: '15px',
+                        right: '15px',
+                        fontSize: '14px',
+                        zIndex: 1000,
+                        backgroundColor: 'transparent',
+                        padding: 0,
+                        margin: 0,
+                        border: 'none',
+                        outline: 'none'
+                    }}
+                    onMouseEnter={() => setIsOverDownloadMenu(true)}
+                    onMouseLeave={() => {
+                        setIsOverDownloadMenu(false);
+                        // Reset the tooltip visibility when leaving the download area
+                        if (!preppingDownload) {
+                            setShowTooltip(true);
+                        }
+                    }}
+                >
+                    <DownloadMenu
+                        csvOpts={{
+                            chartName: props.title || 'chart',
+                            props: {
+                                ...props,
+                                results: results,
+                            },
+                        }}
+                        enableDownloadAsCSV={enableDownloadAsCSV}
+                        enableDownloadAsPNG={enableDownloadAsPNG}
+                        pngOpts={{ chartName: props.title || 'chart', element: chartRef.current }}
+                        preppingDownload={preppingDownload}
+                        setPreppingDownload={(prepping) => {
+                            setPreppingDownload(prepping);
+                            // When download preparation is complete, reset the hover states
+                            if (!prepping) {
+                                setIsOverDownloadMenu(false);
+                                setShowTooltip(true);
+                            }
+                        }}
+                        style={{
+                            backgroundColor: 'transparent',
+                            border: 'none',
+                            padding: 0,
+                            margin: 0
+                        }}
+                    />
+                </div>
+            )}
+
             {translatedTitle && (
                 <h2 style={{ color: '#a53241', fontSize: '23px' }}>{translatedTitle}</h2>
             )}
@@ -192,13 +277,13 @@ export default function SingleNumberCard({ title, metrics, results, clientContex
             <div style={{
                 display: 'flex',
                 justifyContent: 'space-between',
-                position: 'relative' // Added for positioning the second value
+                position: 'relative'
             }}>
                 <div style={{
                     fontSize: '28px',
                     fontWeight: 'bold',
                     color: '#333942',
-                    alignSelf: 'flex-end' // Aligns first value to bottom
+                    alignSelf: 'flex-end'
                 }}>
                     {isLoading ? '...' : formatFirstValue()}
                 </div>
@@ -243,4 +328,4 @@ export default function SingleNumberCard({ title, metrics, results, clientContex
             )}
         </div>
     );
-}
+};

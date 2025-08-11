@@ -7,6 +7,7 @@ import Component from './index';
 export const meta = {
     name: 'KPIChart', // an identifier - must match KPIChart.emb.ts
     label: 'KPI Chart', // user-facing name in the builder 
+    category: 'Cyreen Components',
     inputs: [
         {
             name: 'title',
@@ -26,6 +27,27 @@ export const meta = {
             config: {
                 dataset: 'ds', // restricts measure options to the selected dataset
             }
+        },
+        {
+            name: 'Despar',
+            type: 'boolean',
+            label: 'Despar',
+            category: 'Chart settings',
+            defaultValue: false,
+        },
+        {
+            name: 'enableDownloadAsCSV',
+            type: 'boolean',
+            label: 'Show download as CSV',
+            category: 'Export options',
+            defaultValue: true,
+        },
+        {
+            name: 'enableDownloadAsPNG',
+            type: 'boolean',
+            label: 'Show download as PNG',
+            category: 'Export options',
+            defaultValue: true,
         },
     ]
 } as const satisfies EmbeddedComponentMeta;

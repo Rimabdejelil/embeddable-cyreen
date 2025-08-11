@@ -5,6 +5,7 @@ import BasicDropdown from './index';
 export const meta: EmbeddedComponentMeta = {
     name: 'BasicDropdown',
     label: 'Basic Dropdown',
+    category: 'Cyreen Components',
     defaultWidth: 320,
     defaultHeight: 80,
     inputs: [

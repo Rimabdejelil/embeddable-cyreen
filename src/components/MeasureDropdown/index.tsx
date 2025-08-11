@@ -1,63 +1,81 @@
 import React, { useState, useEffect } from 'react';
 import { XCircle } from 'lucide-react';
+
 type Props = {
-    measureNames: string[];
+    measureTitles: string[];
+    placeholder?: string;
     onChange: (value: string) => void;
+    defaultXAxis?: string;
+    defaultYAxis?: string;
 };
 
-const DropdownMeasureNames = ({ measureNames, onChange }: Props) => {
-    const [selectedName, setSelectedName] = useState('');
+const DropdownMeasureNames = ({
+    measureTitles,
+    onChange,
+    placeholder = "Select...",
+    defaultXAxis = "Shoppers",
+    defaultYAxis = "Sales"
+}: Props) => {
+    const [selectedTitle, setSelectedTitle] = useState('');
+    const [displayValue, setDisplayValue] = useState('');
 
     useEffect(() => {
-        // Reset selection if measureNames change and the current selection is no longer valid
-        if (!measureNames.includes(selectedName)) {
-            setSelectedName('');
+        if (!measureTitles.includes(selectedTitle)) {
+            setSelectedTitle('');
+            setDisplayValue('');
         }
-    }, [measureNames, selectedName]);
+    }, [measureTitles, selectedTitle]);
 
     const handleChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
         const newValue = event.target.value;
-        setSelectedName(newValue);
-        onChange(newValue);
+
+        if (newValue === "RESET_PLACEHOLDER") {
+            // Reset to default values based on placeholder
+            const defaultValue = placeholder === "Select X-axis..." ? defaultXAxis :
+                placeholder === "Select Y-axis..." ? defaultYAxis : '';
+
+            setSelectedTitle(defaultValue);
+            setDisplayValue(''); // This will show the placeholder
+            onChange(defaultValue);
+        } else {
+            setSelectedTitle(newValue);
+            setDisplayValue(newValue);
+            onChange(newValue);
+        }
     };
 
     const handleClear = () => {
-        setSelectedName('');
-        onChange('');
+        // Reset to default values based on placeholder when clearing
+        const defaultValue = placeholder === "Select X-axis..." ? defaultXAxis :
+            placeholder === "Select Y-axis..." ? defaultYAxis : '';
+
+        setSelectedTitle(defaultValue);
+        setDisplayValue('');
+        onChange(defaultValue);
     };
 
     return (
         <div className="dropdown-container">
             <div className="dropdown-wrapper">
                 <select
-                    value={selectedName}
+                    value={displayValue}
                     onChange={handleChange}
-                    className={`dropdown ${!selectedName ? 'placeholder' : ''}`}
+                    className={`dropdown ${!displayValue ? 'placeholder' : ''}`}
                 >
                     <option value="" disabled hidden>
-                        Select measure...
+                        {placeholder}
                     </option>
-                    <option value="">Select measure...</option>
-                    {measureNames.map((fullName) => {
-                        // Remove dataset prefix if present (e.g., "impressions.id_store" becomes "id_store")
-                        const parts = fullName.split('.');
-                        const displayName = parts[parts.length - 1];
-                        return (
-                            <option key={fullName} value={fullName}>
-                                {displayName}
-                            </option>
-                        );
-                    })}
+                    <option value="RESET_PLACEHOLDER">{placeholder}</option>
+                    {measureTitles.map((title) => (
+                        <option key={title} value={title}>
+                            {title}
+                        </option>
+                    ))}
                 </select>
-                {selectedName && (
-                    <button className="reset-button" onClick={handleClear}>
-                        <XCircle size={20} />
-                    </button>
-                )}
             </div>
 
             <style jsx>{`
-        .dropdown-container {
+                .dropdown-container {
                     width: 100%;
                     padding: 10px;
                     background-color: #fff;
@@ -85,9 +103,9 @@ const DropdownMeasureNames = ({ measureNames, onChange }: Props) => {
                 }
 
                 .dropdown.placeholder {
-                    color: #aaa; /* Lighter color for placeholder */
+                    color: #aaa;
                 }
-        .reset-button {
+                .reset-button {
                     position: absolute;
                     right: 12px;
                     background: none;
@@ -101,7 +119,7 @@ const DropdownMeasureNames = ({ measureNames, onChange }: Props) => {
                     color: #e64a19;
                     transform: scale(1.1);
                 }
-      `}</style>
+            `}</style>
         </div>
     );
 };

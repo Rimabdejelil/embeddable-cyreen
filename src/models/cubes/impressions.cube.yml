@@ -44,6 +44,7 @@ cubes:
       - name: timestamp
         sql: timestamp
         type: time
+        title: Timestamp
 
       - name: id_clip
         sql: id_clip
@@ -163,338 +164,38 @@ cubes:
         type: number
         sql: "1.5 * SUM(impressions_unfiltered)"
         title: "Impressions"
+
+      - name: impression_unfiltered_calculation_despar
+        type: sum
+        sql: impressions_unfiltered
+        title: "Impressions Without Despar"
       
       - name: impression_unfiltered_calculation2
         type: number
         sql: "ROUND(1.5 * SUM(impressions_unfiltered))"
         title: "Impressions2"
 
-      - name: sum_impressions_unfiltered_trigger
-        type: sum
-        sql: impressions_unfiltered_trigger
+      - name: impressions_trigger
+        type: number
+        sql: "1.5 * SUM(impressions_unfiltered_trigger)"
         title: "Trigger"
 
-      - name: sum_impressions_unfiltered_witness
-        type: sum
-        sql: impressions_unfiltered_witness
+      - name: impressions_witness
+        type: number
+        sql: "1.5 * SUM(impressions_unfiltered_witness)"
         title: "Witness"
 
+      - name: impressions_trigger_despar
+        type: number
+        sql: "SUM(impressions_unfiltered_trigger)"
+        title: "Trigger"
 
+      - name: impressions_witness_despar
+        type: number
+        sql: "SUM(impressions_unfiltered_witness)"
+        title: "Witness"
 
-    pre_aggregations:
-      - name: impression_unfiltered_calculation_by_hour_and_month
-        dimensions:
-          - hour
-          - month
-        measures:
-          - impression_unfiltered_calculation
-
-        
-
-      - name: impression_unfiltered_calculation_by_hour_group_and_month
-        dimensions:
-          - hour_group
-          - month
-        measures:
-          - impression_unfiltered_calculation
-
-      - name: impression_unfiltered_calculation_by_week_and_month
-        dimensions:
-          - week
-          - month
-        measures:
-          - impression_unfiltered_calculation
-
-      - name: impression_unfiltered_calculation_by_month_and_month
-        dimensions:
-          - month
-        measures:
-          - impression_unfiltered_calculation
-
-      - name: impression_unfiltered_calculation_by_name_store_and_month
-        dimensions:
-          - name_store
-          - month
-        measures:
-          - impression_unfiltered_calculation
-
-      - name: impression_unfiltered_calculation_by_weekday_and_month
-        dimensions:
-          - weekday
-          - month
-        measures:
-          - impression_unfiltered_calculation
-
-
-      #######
-
-      - name: impression_unfiltered_calculation_by_hour_and_name_store
-        dimensions:
-          - hour
-          - name_store
-        measures:
-          - impression_unfiltered_calculation
-
-      - name: impression_unfiltered_calculation_by_hour_group_and_name_store
-        dimensions:
-          - hour_group
-          - name_store
-        measures:
-          - impression_unfiltered_calculation
-
-      - name: impression_unfiltered_calculation_by_week_and_name_store
-        dimensions:
-          - week
-          - name_store
-        measures:
-          - impression_unfiltered_calculation
-
-      - name: impression_unfiltered_calculation_by_month_and_name_store
-        dimensions:
-          - month
-          - name_store
-        measures:
-          - impression_unfiltered_calculation
-
-      - name: impression_unfiltered_calculation_by_name_store_and_name_store
-        dimensions:
-          - name_store
-        measures:
-          - impression_unfiltered_calculation
-
-      - name: impression_unfiltered_calculation_by_weekday_and_name_store
-        dimensions:
-          - weekday
-          - name_store
-        measures:
-          - impression_unfiltered_calculation
-
-
-      #####
-
-      - name: impression_unfiltered_calculation_by_hour_and_hour
-        dimensions:
-          - hour
-        measures:
-          - impression_unfiltered_calculation
-
-      - name: impression_unfiltered_calculation_by_hour_group_and_hour
-        dimensions:
-          - hour_group
-          - hour
-        measures:
-          - impression_unfiltered_calculation
-
-      - name: impression_unfiltered_calculation_by_week_and_hour
-        dimensions:
-          - week
-          - hour
-        measures:
-          - impression_unfiltered_calculation
-
-      - name: impression_unfiltered_calculation_by_month_and_hour
-        dimensions:
-          - month
-          - hour
-        measures:
-          - impression_unfiltered_calculation
-
-      - name: impression_unfiltered_calculation_by_name_store_and_hour
-        dimensions:
-          - name_store
-          - hour
-        measures:
-          - impression_unfiltered_calculation
-
-      - name: impression_unfiltered_calculation_by_weekday_and_hour
-        dimensions:
-          - weekday
-          - hour
-        measures:
-          - impression_unfiltered_calculation
-
-      #####
-
-      - name: impression_unfiltered_calculation_by_hour_and_hour_group
-        dimensions:
-          - hour
-          - hour_group
-        measures:
-          - impression_unfiltered_calculation
-
-      - name: impression_unfiltered_calculation_by_month_and_hour_group
-        dimensions:
-          - month
-          - hour_group
-        measures:
-          - impression_unfiltered_calculation
-
-      - name: impression_unfiltered_calculation_by_week_and_hour_group
-        dimensions:
-          - week
-          - hour_group
-        measures:
-          - impression_unfiltered_calculation
-
-      - name: impression_unfiltered_calculation_by_hour_group_and_hour_group
-        dimensions:
-          - hour_group
-        measures:
-          - impression_unfiltered_calculation
-
-      - name: impression_unfiltered_calculation_by_name_store_and_hour_group
-        dimensions:
-          - name_store
-          - hour_group
-        measures:
-          - impression_unfiltered_calculation
-
-      - name: impression_unfiltered_calculation_by_weekday_and_hour_group
-        dimensions:
-          - weekday
-          - hour_group
-        measures:
-          - impression_unfiltered_calculation
-
-
-     ######################
-
-      - name: impression_unfiltered_calculation_by_hour_and_weekday
-        dimensions:
-          - hour
-          - weekday
-        measures:
-          - impression_unfiltered_calculation
-
-      - name: impression_unfiltered_calculation_by_hour_group_and_weekday
-        dimensions:
-          - hour_group
-          - weekday
-        measures:
-          - impression_unfiltered_calculation
-
-      - name: impression_unfiltered_calculation_by_week_and_weekday
-        dimensions:
-          - week
-          - weekday
-        measures:
-          - impression_unfiltered_calculation
-
-      - name: impression_unfiltered_calculation_by_month_and_weekday
-        dimensions:
-          - month
-          - weekday
-        measures:
-          - impression_unfiltered_calculation
-
-      - name: impression_unfiltered_calculation_by_name_store_and_weekday
-        dimensions:
-          - name_store
-          - weekday
-        measures:
-          - impression_unfiltered_calculation
-
-      - name: impression_unfiltered_calculation_by_weekday_and_weekday
-        dimensions:
-          - weekday
-        measures:
-          - impression_unfiltered_calculation
-
-
-    ##########################
-      
-      - name: impression_unfiltered_calculation_by_hour_and_week
-        dimensions:
-          - hour
-          - week
-        measures:
-          - impression_unfiltered_calculation
-
-      - name: impression_unfiltered_calculation_by_hour_group_and_week
-        dimensions:
-          - hour_group
-          - week
-        measures:
-          - impression_unfiltered_calculation
-
-      - name: impression_unfiltered_calculation_by_month_and_week
-        dimensions:
-          - month
-          - week
-        measures:
-          - impression_unfiltered_calculation
-
-      - name: impression_unfiltered_calculation_by_week_and_week
-        dimensions:
-          - week
-        measures:
-          - impression_unfiltered_calculation
-
-      - name: impression_unfiltered_calculation_by_name_store_and_week
-        dimensions:
-          - name_store
-          - week
-        measures:
-          - impression_unfiltered_calculation
-
-      - name: impression_unfiltered_calculation_by_weekday_and_week
-        dimensions:
-          - weekday
-          - week
-        measures:
-          - impression_unfiltered_calculation
-
-
-
-
-    ###################
-      
-      - name : impressions_unfiltered_calculation
-        measures:
-          - impressions_unfiltered_calculation
-
-   ########"
-
-      ########    
-
-      - name : impressions_by_month
-        measures:
-          - impressions_unfiltered_calculation
-        time_dimension: timestamp
-        granularity: month
-
-      - name : impressions_by_day
-        measures:
-          - impressions_unfiltered_calculation
-        time_dimension: timestamp
-        granularity: day
-
-
-      - name : impressions_by_week
-        measures:
-          - impressions_unfiltered_calculation
-        time_dimension: timestamp
-        granularity: week
-
-
-      - name : impressions_by_hour
-        measures:
-          - impressions_unfiltered_calculation
-        time_dimension: timestamp
-        granularity: hour
-
-
-         #################
-         
-      - name : geomap
-        dimensions :
-          - latitude
-          - longitude
-          - name_store
-
-        measures :
-          - impressions_unfiltered_calculation
-
+ 
   - name: big_dm
     title : big_dm
     sql: >
@@ -538,6 +239,7 @@ cubes:
     - name: week
       sql: week
       type: number
+      title: Week
 
     - name: dow
       sql: dow
@@ -802,9 +504,71 @@ cubes:
       sql: temp
       type: number
 
+    - name: feels_like
+      sql: feels_like
+      type: number
+
+
+    - name: weather_bins
+      type: string
+      sql: |
+        CASE
+          WHEN temp < 10 THEN '0°'
+          WHEN temp < 20 THEN '10°'
+          WHEN temp < 30 THEN '20°'
+          WHEN temp < 40 THEN '30°'
+          WHEN temp < 50 THEN '40°'
+          WHEN temp < 60 THEN '50°'
+          WHEN temp < 70 THEN '60°'
+          WHEN temp < 80 THEN '70°'
+          WHEN temp < 90 THEN '80°'
+          WHEN temp < 100 THEN '90°'
+          ELSE '100°+'
+        END
+      title: Weather Group
+
+
+    - name: weather_feels_bins
+      type: string
+      sql: |
+        CASE
+          WHEN feels_like < 10 THEN '0°'
+          WHEN feels_like < 20 THEN '10°'
+          WHEN feels_like < 30 THEN '20°'
+          WHEN feels_like < 40 THEN '30°'
+          WHEN feels_like < 50 THEN '40°'
+          WHEN feels_like < 60 THEN '50°'
+          WHEN feels_like < 70 THEN '60°'
+          WHEN feels_like < 80 THEN '70°'
+          WHEN feels_like < 90 THEN '80°'
+          WHEN feels_like < 100 THEN '90°'
+          ELSE '100°+'
+        END
+      title: Weather Feels Group
+
+
     - name: rain_per_hour
       sql: rain_per_hour
       type: number
+
+    - name: rain_bool
+      sql: CASE WHEN rain_per_hour != 0 THEN 'Yes' ELSE 'No' END
+      type: string
+      title : Rain
+
+    - name: rain_bool_tf
+      sql: CASE WHEN rain_per_hour != 0 THEN 'Atrue' ELSE 'Bfalse' END
+      type: string
+
+    - name: snow_per_hour
+      sql: snow_per_hour
+      type: number
+
+    - name: snow_bool
+      sql: CASE WHEN snow_per_hour != 0 THEN 'Yes' ELSE 'No' END
+      type: string
+      title: Snow
+
 
     - name: visibility
       sql: visibility
@@ -817,6 +581,7 @@ cubes:
     - name: name_market_type
       sql: name_market_type
       type: string
+      title: Name Market Type
 
     - name: name_store
       sql: name_store
@@ -867,15 +632,61 @@ cubes:
       type: string
 
 
+    - name: activity_1
+      sql: activity_1
+      type: boolean
+
+    - name: activity_2
+      sql: activity_2
+      type: boolean
+
+    - name: activity_3
+      sql: activity_3
+      type: boolean
+
+    - name: activity_4
+      sql: activity_4
+      type: boolean
+    
+    - name: activity_5
+      sql: activity_5
+      type: boolean
+
+      
+
+
     measures:
 
 
-    - name: hour_value  # Use when you need raw hour as measure
+    - name: avg_temp  
+      sql: temp
+      type: avg
+      title: Temperature (°C)
+
+    - name: avg_rain  
+      sql: rain_per_hour
+      type: avg
+      title: Rain (millimeter)
+
+    - name: avg_snow  
+      sql: snow_per_hour
+      type: avg
+      title: Snow (millimeter)
+
+    - name: avg_feels_like  
+      sql: feels_like
+      type: avg
+      title: Temperature (Feels Like °C)
+
+    - name: avg_clouds  
+      sql: clouds
+      type: avg
+      title: Clouds (%)
+
+
+    - name: hour_value  
       sql: MIN(hour)
       type: number
-
-         
-
 
     - name: weekday_agg_string
       sql: |
@@ -889,6 +700,11 @@ cubes:
         )
       type: string
       title: "Weekdays (Aggregated)"
+
+    - name : rain_bool_tftf
+      sql: "STRING_AGG(DISTINCT {rain_bool_tf}, ', ')"
+      type: string
+      title: "Rain Bool TFTF"
 
     - name : name_adlevel1
       sql: "STRING_AGG(DISTINCT name_adlevel, ', ')"
@@ -910,6 +726,21 @@ cubes:
       sql: frequency_seen
       title: "Total Frequency Seen"
 
+    - name: sum_frequency_seen_a
+      type: sum
+      sql: frequency_seen_a
+      title: "Total Frequency Seen A"
+
+    - name: sum_frequency_seen_b
+      type: sum
+      sql: frequency_seen_b
+      title: "Total Frequency Seen B"
+
+    - name: sum_frequency_seen_a_b
+      type: number
+      sql: "{sum_frequency_seen_a} + {sum_frequency_seen_b}"
+      title: "Total Frequency Seen A B"
+
     - name: sum_frequency_not_seen
       type: sum
       sql: frequency_not_seen
@@ -925,6 +756,21 @@ cubes:
       type: sum
       sql: receipts_seen
       title: "Total Receipts Seen"
+
+    - name: sum_receipts_seen_a
+      type: sum
+      sql: receipts_seen_a
+      title: "Total Receipts Seen A"
+
+    - name: sum_receipts_seen_b
+      type: sum
+      sql: receipts_seen_b
+      title: "Total Receipts Seen B"
+
+    - name: sum_receipts_seen_a_b
+      type: number
+      sql: "{sum_receipts_seen_a} + {sum_receipts_seen_b}"
+      title: "Total Receipts Seen A B"
 
     - name: sum_receipts_not_seen
       type: sum
@@ -1073,6 +919,21 @@ cubes:
       sql: "SUM(sales_seen) - {sales_expected}"
       title: "Sales Uplift Absolute"
 
+    - name: sales_uplift_absolut_a
+      type: number
+      sql: "SUM(sales_seen_a) - {sales_expected_a}"
+      title: "Sales Uplift Absolute A"
+
+    - name: sales_uplift_absolut_b
+      type: number
+      sql: "SUM(sales_seen_b) - {sales_expected_b}"
+      title: "Sales Uplift Absolute B"
+
+    - name: sales_uplift_absolut_a_b
+      type: number
+      sql: "(SUM(sales_seen_a) + SUM(sales_seen_b)) - {sales_expected_a_b}"
+      title: "Sales Uplift Absolute A B"
+
     - name: revenue_uplift_absolut
       type: number
       sql: "SUM(revenue_seen) - {revenue_expected}"
@@ -1082,6 +943,21 @@ cubes:
       type: number
       sql: "SUM(frequency_seen) * {conversion_not_seen} * {avg_sales_not_seen}"
       title: "Sales Expected"
+
+    - name: sales_expected_a
+      type: number
+      sql: "SUM(frequency_seen_a) * {conversion_not_seen} * {avg_sales_not_seen}"
+      title: "Sales Expected A"
+    
+    - name: sales_expected_b
+      type: number
+      sql: "SUM(frequency_seen_b) * {conversion_not_seen} * {avg_sales_not_seen}"
+      title: "Sales Expected B"
+      
+    - name: sales_expected_a_b
+      type: number
+      sql: "{sum_frequency_seen_a_b} * {conversion_not_seen} * {avg_sales_not_seen}"
+      title: "Sales Expected A B"
 
     - name: revenue_expected
       type: number
@@ -1110,6 +986,21 @@ cubes:
       sql: "((SUM(sales) / NULLIF(SUM(sales) - ({sales_uplift_absolut}), 0) - 1)*100)"
       title: "Sales Uplift"
 
+    - name: sales_uplift1_a
+      type: number
+      sql: "((SUM(sales_a) / NULLIF(SUM(sales_a) - ({sales_uplift_absolut_a}), 0) - 1)*100)"
+      title: "Sales Uplift Spot A"
+
+    - name: sales_uplift1_b
+      type: number
+      sql: "((SUM(sales_b) / NULLIF(SUM(sales_b) - ({sales_uplift_absolut_b}), 0) - 1)*100)"
+      title: "Sales Uplift Spot B"
+
+    - name: sales_uplift1_a_b
+      type: number
+      sql: "(((SUM(sales_a) + SUM(sales_b)) / NULLIF((SUM(sales_a) + SUM(sales_b)) - ({sales_uplift_absolut_a_b}), 0) - 1)*100)"
+      title: "Sales Uplift Spot A B"
+
     - name: revenue_uplift
       type: number
       sql: "(SUM(revenue) / NULLIF(SUM(revenue) - ({revenue_uplift_absolut}), 0) - 1)"
@@ -1122,6 +1013,22 @@ cubes:
       type: number
       sql: "CASE WHEN {sales_uplift1} < 0 THEN 0 ELSE {sales_uplift1} END"
       title: "Sales Uplift (No Negative)"
+
+    - name: sales_uplift_no_negative_a
+      type: number
+      sql: "CASE WHEN {sales_uplift1_a} < 0 THEN 0 ELSE {sales_uplift1_a} END"
+      title: "Sales Uplift (No Negative) Spot A"
+
+    - name: sales_uplift_no_negative_b
+      type: number
+      sql: "CASE WHEN {sales_uplift1_b} < 0 THEN 0 ELSE {sales_uplift1_b} END"
+      title: "Sales Uplift (No Negative) Spot B"
+
+    - name: sales_uplift_no_negative_a_b
+      type: number
+      sql: "CASE WHEN {sales_uplift1_a_b} < 0 THEN 0 ELSE {sales_uplift1_a_b} END"
+      title: "Sales Uplift (No Negative) Spot A B"
+
     
     - name: revenue_uplift_no_negative
       type: number
@@ -1143,6 +1050,22 @@ cubes:
       sql: "100.0 * {sum_receipts_seen} / NULLIF({sum_frequency_seen}, 0)"
       title: "With C.A.P."
 
+    - name: with_cap_conversion_rate_spot_a
+      type: number
+      sql: "100.0 * {sum_receipts_seen_a} / NULLIF({sum_frequency_seen_a}, 0)"
+      title: "With C.A.P. Spot A"
+
+    - name: with_cap_conversion_rate_spot_b
+      type: number
+      sql: "100.0 * {sum_receipts_seen_b} / NULLIF({sum_frequency_seen_b}, 0)"
+      title: "With C.A.P. Spot B"
+
+    - name: with_cap_conversion_rate_spot_a_b
+      type: number
+      sql: "100.0 * {sum_receipts_seen_a_b} / NULLIF({sum_frequency_seen_a_b}, 0)"
+      title: "With C.A.P. Spot A B"
+
+
     - name: without_cap_conversion_rate
       type: number
       sql: "100.0 * {sum_receipts_not_seen} / NULLIF({sum_frequency_not_seen}, 0)"
@@ -1154,6 +1077,21 @@ cubes:
       sql: "SUM(sales_seen) / NULLIF(SUM(receipts_seen), 0)"
       title: "With C.A.P"
 
+    - name: with_cap_basket_size_a
+      type: number
+      sql: "SUM(sales_seen_a) / NULLIF(SUM(receipts_seen_a), 0)"
+      title: "With C.A.P Spot A"
+
+    - name: with_cap_basket_size_b
+      type: number
+      sql: "SUM(sales_seen_b) / NULLIF(SUM(receipts_seen_b), 0)"
+      title: "With C.A.P Spot B"
+
+    - name: with_cap_basket_size_a_b
+      type: number
+      sql: "{sum_sales_seen_a_b} / NULLIF({sum_receipts_seen_a_b}, 0)"
+      title: "With C.A.P Spot A B"
+
     - name: without_cap_basket_size
       type: number
       sql: "SUM(sales_not_seen) / NULLIF(SUM(receipts_not_seen), 0)"
@@ -1163,6 +1101,21 @@ cubes:
       type: sum
       sql: sales_seen
       title: "Sales with C.A.P"
+
+    - name: sum_sales_seen_a
+      type: sum
+      sql: sales_seen_a
+      title: "Sales with C.A.P A"
+
+    - name: sum_sales_seen_b
+      type: sum
+      sql: sales_seen_b
+      title: "Sales with C.A.P B"
+
+    - name: sum_sales_seen_a_b
+      type: number
+      sql: "{sum_sales_seen_a} + {sum_sales_seen_b}"
+      title: "Sales with C.A.P A B"
 
     - name: sum_sales_not_seen
       type: sum

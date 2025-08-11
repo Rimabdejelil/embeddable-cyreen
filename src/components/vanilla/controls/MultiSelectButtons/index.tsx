@@ -8,41 +8,115 @@ type Props = {
   onChange: (v: Array<string>) => void;
   defaultValue?: string;
   Ranking?: string;
+  RankingMin?: string;
   clientContext?: {
     language?: string;
   };
+  MasterRetail?: boolean
 };
 
 export default (props: Props) => {
-  const { title, Ranking, values = [], onChange, defaultValue, clientContext } = props;
+  const { title, Ranking, values = [], onChange, defaultValue, clientContext, MasterRetail, RankingMin } = props;
   const language = clientContext?.language;
 
   const [selected, setSelected] = useState<string | null>(defaultValue || null);
   const [translatedValues, setTranslatedValues] = useState<Array<string>>([]);
 
+  // Add this useEffect to handle initial state
+  const originalHandleClick = (label: string, isInitial = false) => {
+    if (selected !== label || isInitial) {
+      if (!isInitial) {
+        setSelected(label);
+      }
 
-  const handleClick = (label: string) => {
-  if (selected !== label) {
-    setSelected(label);
+      if (label === 'Rank By               Difference') {
+        onChange({ value: label, label });
+      } else if (label === 'Rank By               Uplift') {
+        onChange({ value: label, label });
+      } else if (label === 'No Ranking') {
+        onChange({ value: label, label });
+      } else if (label === 'Conversion Rate') {
+        onChange({ value: label, label, Ranking });
+      } else if (label === 'Average Basket Size') {
+        onChange({ value: label, label, Ranking });
+      } else if (label === 'Low -> High') {
+        onChange({ value: label, label, Ranking });
+      } else if (label === 'High -> Low') {
+        onChange({ value: label, label, Ranking });
+      } else if (label === 'Average Sales (Units)') {
+        onChange({ value: label, label, Ranking, RankingMin });
+      } else if (label === 'Average Revenue (€)') {
+        onChange({ value: label, label, Ranking, RankingMin });
+      } else if (label === 'Average Revenue (CLP$)') {
+        onChange({ value: label, label, Ranking, RankingMin });
+      } else if (label === 'Average Shopper') {
+        onChange({ value: label, label, Ranking, RankingMin });
+      } else if (label === 'Average Shopper (in %)') {
+        onChange({ value: label, label, Ranking, RankingMin });
+      } else if (label === 'No Rank') {
+        onChange({ value: label, label, RankingMin });
+      } else if (['5', '10', '15', '30', '60'].includes(label)) {
+        onChange({ value: label, label, Ranking, RankingMin });
+      }
+      else if (['Hourly', 'Weekday', 'Monthly', 'Daily', 'Absolute', 'Percentage'].includes(label)) {
+        onChange({ value: label, label, RankingMin });
+      }
+      else {
+        onChange({ value: label, label });
+      }
+    }
+  };
 
-    if (label === 'Rank By               Difference') {
-      onChange({ value: label, label });
-    } else if (label === 'Rank By               Uplift') {
-      onChange({ value: label, label });
-    } else if (label === 'No Ranking') {
-      onChange({ value: label, label });
+  const customHandleClick = (label: string) => {
+    if (selected !== label) {
+      setSelected(label);
+
+      if (label === 'Rank By               Difference') {
+        onChange({ value: label, label });
+      } else if (label === 'Rank By               Uplift') {
+        onChange({ value: label, label });
+      } else if (label === 'No Ranking') {
+        onChange({ value: label, label });
+      } else if (label === 'Conversion Rate') {
+        onChange({ value: label, label, Ranking });
+      } else if (label === 'Average Basket Size') {
+        onChange({ value: label, label, Ranking });
+      } else if (label === 'Low -> High') {
+        onChange({ value: label, label, Ranking });
+      } else if (label === 'High -> Low') {
+        onChange({ value: label, label, Ranking });
+      } else if (label === 'Average Sales (Units)') {
+        onChange({ value: label, label, Ranking, RankingMin });
+      } else if (label === 'Average Revenue (€)') {
+        onChange({ value: label, label, Ranking, RankingMin });
+      } else if (label === 'Average Revenue (CLP$)') {
+        onChange({ value: label, label, Ranking, RankingMin });
+      } else if (label === 'Average Shopper') {
+        onChange({ value: label, label, Ranking, RankingMin });
+      } else if (label === 'Average Shopper (in %)') {
+        onChange({ value: label, label, Ranking, RankingMin });
+      } else if (label === 'No Rank') {
+        onChange({ value: label, label, RankingMin });
+      } else if (['5', '10', '15', '30', '60'].includes(label)) {
+        onChange({ value: label, label, Ranking, RankingMin });
+      } else if (['Hourly', 'Weekday', 'Monthly', 'Daily', 'Absolute', 'Percentage'].includes(label)) {
+        onChange({ value: label, label, RankingMin });
+      }
+      else {
+        onChange({ value: label, label });
+      }
     }
-    else if (label === 'Conversion Rate') {
-      onChange({ value: label, label, Ranking });
+  };
+
+  // Choose correct handler
+  const handleClick = RankingMin ? customHandleClick : (label: string) => originalHandleClick(label, false);
+
+  // useEffect only when RankingMin is NOT defined
+  useEffect(() => {
+    if (defaultValue && !RankingMin) {
+      originalHandleClick(defaultValue, true);
     }
-    else if (label === 'Average Basket Size') {
-      onChange({ value: label, label, Ranking });
-    }
-    else {
-      onChange({ value: label, label });
-    }
-  }
-};
+  }, [defaultValue, Ranking, RankingMin]);
 
 
 
@@ -93,25 +167,31 @@ export default (props: Props) => {
         <div className="granularity-options">
           {values.map((value, i) => {
             const isSelected = selected === value;
-
             const textToDisplay = (translatedValues && translatedValues[i]) || value;
-            const lines = splitText(textToDisplay); // Split the text into lines
+            const lines = splitText(textToDisplay);
 
             return (
-              <button
-                key={i}
-                className={`granularity-button ${isSelected ? 'selected' : ''}`}
-                onClick={() => handleClick(value)}
-              >
-                <div className="multiSelectInner">
-                  {lines.map((line, index) => (
-                    <div key={index}>{line}</div> // Display each line
-                  ))}
-                </div>
-              </button>
+              <React.Fragment key={i}>
+                <button
+                  className={`granularity-button ${isSelected ? 'selected' : ''}`}
+                  onClick={() => handleClick(value)}
+                >
+                  <div className="multiSelectInner">
+                    {lines.map((line, index) => (
+                      <div key={index}>{line}</div>
+                    ))}
+                  </div>
+                </button>
+
+                {/* Add thick vertical line after the last button if MasterRetail is true */}
+                {MasterRetail && i === values.length - 1 && (
+                  <div className="vertical-line" />
+                )}
+              </React.Fragment>
             );
           })}
         </div>
+
 
         <style jsx>{`
           .granularity-picker-container {
@@ -171,6 +251,16 @@ export default (props: Props) => {
           .multiSelectInner div {
             padding: 2px;
           }
+
+
+          .vertical-line {
+  width: 6px;
+  height: 80px;
+  background-color: #62626E;
+  border-radius: 4px;
+  margin-left: 8px; /* same as the gap between buttons */
+}
+
         `}</style>
       </div>
     </Container>

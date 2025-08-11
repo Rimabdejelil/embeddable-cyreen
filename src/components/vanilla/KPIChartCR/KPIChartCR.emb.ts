@@ -7,6 +7,7 @@ import Component from './index';
 export const meta = {
     name: 'KPIChartCR', // an identifier - must match KPIChart.emb.ts
     label: 'KPI Chart Conversion Rate', // user-facing name in the builder 
+    category: 'Cyreen Components',
     inputs: [
         {
             name: 'title',
@@ -27,12 +28,33 @@ export const meta = {
                 dataset: 'ds', // restricts measure options to the selected dataset
             }
         },
+        {
+            name: 'Despar',
+            type: 'boolean',
+            label: 'Despar',
+            category: 'Chart settings',
+            defaultValue: false,
+        },
+        {
+            name: 'enableDownloadAsCSV',
+            type: 'boolean',
+            label: 'Show download as CSV',
+            category: 'Export options',
+            defaultValue: true,
+        },
+        {
+            name: 'enableDownloadAsPNG',
+            type: 'boolean',
+            label: 'Show download as PNG',
+            category: 'Export options',
+            defaultValue: true,
+        },
     ]
 } as const satisfies EmbeddedComponentMeta;
 
 //The function that tells the SDK to include this component in the no-code builder.
 export default defineComponent(Component, meta, {
-    props: (inputs: Inputs<typeof meta>,_state, clientContext) => {
+    props: (inputs: Inputs<typeof meta>, _state, clientContext) => {
         return {
             ...inputs, // the inputs are passed through to the component as props
             results: loadData({ // fetches data from your database and passes it to your component

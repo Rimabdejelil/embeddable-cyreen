@@ -12,7 +12,7 @@ export const meta = {
   defaultWidth: 920,
   defaultHeight: 50,
   classNames: ['on-top'],
-  category: 'Charts: time-series comparison',
+  category: 'Embeddable Components',
   inputs: [
     {
       name: 'title',

@@ -27,11 +27,16 @@ export default function TableHead({
   onSortingChange
 }: Props) {
 
-  const renderColumn = (column: Column, columnIndex: number): ReactElement => {
+  const renderColumn = (column: Column, columnIndex: number): ReactElement | null => {
+    // Skip rendering if this is an "Impressions" column
+    if (column.label === 'Impressions') {
+      return null; // Return null instead of empty fragment
+    }
+
     const isRowHeader = column.type === ColumnType.ROW_HEADER || column.type === ColumnType.ROW_HEADER_GROUP;
     const shouldBeLeftAligned = column.type !== ColumnType.DIMENSION || column.children?.filter(child => child.type === ColumnType.MEASURE).length === 1;
     const leafColumns = column.getLeafColumns();
-    const isSticky = isRowHeader || leafColumns.some(child => child.type === ColumnType.ROW_HEADER || child.type === ColumnType.ROW_HEADER_GROUP) ;
+    const isSticky = isRowHeader || leafColumns.some(child => child.type === ColumnType.ROW_HEADER || child.type === ColumnType.ROW_HEADER_GROUP);
     const shouldRenderRightBorder = column.depth === 0 || column.type !== ColumnType.MEASURE || column.parent?.children?.at(-1)?.key === column.key;
     const isSortable = enableSorting && (column.type !== ColumnType.DIMENSION);
     const sortedDirection = sortCriteria?.find(criteria => criteria.key === column.key)?.direction;
@@ -76,7 +81,7 @@ export default function TableHead({
               <span className={cn('w-3', {
                 invisible: !sortedDirection
               })}>
-               { sortedDirection === SortDirection.ASCENDING ? <SortUp fill="currentcolor" /> : <SortDown fill="currentcolor" /> }
+                {sortedDirection === SortDirection.ASCENDING ? <SortUp fill="currentcolor" /> : <SortDown fill="currentcolor" />}
               </span>
             ) : null
           }
@@ -89,16 +94,19 @@ export default function TableHead({
     return null;
   }
 
+  // Filter out columns with "Impressions" label before rendering
+  const filteredColumns = columns.filter(column => column.label !== 'Impressions');
+
   // Recursively render table headers with all dimensions
   return (
     <>
       <tr>
-        { columns.map(renderColumn) }
+        {filteredColumns.map(renderColumn)}
       </tr>
       {
-        columns[0].children ? (
+        filteredColumns[0]?.children ? (
           <TableHead
-            columns={columns.map(column => column?.children || []).flat()}
+            columns={filteredColumns.map(column => column?.children || []).flat()}
             onSortingChange={onSortingChange}
             fontSize={fontSize}
             minColumnWidth={minColumnWidth}

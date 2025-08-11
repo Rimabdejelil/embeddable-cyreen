@@ -7,6 +7,7 @@ import GranularityPickerComponent from './index';
 export const meta: EmbeddedComponentMeta = {
     name: 'GranularityPickers',
     label: 'Granularity Picker',
+    category: 'Cyreen Components',
     inputs: [
         {
             name: 'defaultGranularity',

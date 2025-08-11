@@ -8,7 +8,7 @@ export const meta = {
   label: 'Text input',
   defaultWidth: 300,
   defaultHeight: 80,
-  category: 'Controls: inputs & dropdowns',
+  category: 'Embeddable Components',
   inputs: [
     {
       name: 'title',

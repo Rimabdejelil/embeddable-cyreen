@@ -9,6 +9,13 @@ import TotalPerformanceIcon from '../../../assets/Total Performance.png';
 import OverviewIcon from '../../../assets/Overview.png';
 import GenralKPIsIcon from '../../../assets/GeneralKPIs.png';
 import InstoreDuration from '../../../assets/InstoreDuration.png';
+import RetailMediaNetwork from '../../../assets/RetailMediaNetwork.png';
+import OptimizationRetail from '../../../assets/OptimizationRetail.png';
+import TrolleyUsage from '../../../assets/TrolleyUsage.png';
+import Profitability from '../../../assets/Profitability.png';
+import Heatmap from '../../../assets/Heatmap.png';
+import MarketingActivities from '../../../assets/MarketingActivities.png';
+import ABTesting from '../../../assets/ABTesting.png';
 
 const iconMap: { [key: string]: string } = {
   impression: ImpressionIcon,
@@ -17,7 +24,14 @@ const iconMap: { [key: string]: string } = {
   totalperformance: TotalPerformanceIcon,
   overview: OverviewIcon,
   generalkpis: GenralKPIsIcon,
-  instoreduration: InstoreDuration
+  instoreduration: InstoreDuration,
+  retailmedianetwork: RetailMediaNetwork,
+  optimizationretail: OptimizationRetail,
+  trolleyusage: TrolleyUsage,
+  profitability: Profitability,
+  heatmap: Heatmap,
+  marketingactivities: MarketingActivities,
+  abtesting: ABTesting,
 };
 
 type Props = {
@@ -62,8 +76,8 @@ export default (props: Props) => {
   };
 
   const iconStyle = {
-    width: '135px',
-    height: '100px',
+    width: icon === "Optimization" || "profitability" || "marketingactivities" || "generalkpis" ? '185px' : '135px',
+    height: icon === "Optimization" ? '115px' : '100px',
     marginRight: '10px',
     marginLeft: '0px',
   };

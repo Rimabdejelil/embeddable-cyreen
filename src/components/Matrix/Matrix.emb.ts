@@ -1,12 +1,13 @@
 import { EmbeddedComponentMeta, Inputs, defineComponent } from '@embeddable.com/react';
 import { Dataset, Dimension, Measure, loadData } from '@embeddable.com/core';
 
-import MatrixChartEcharts from './index'; // Import your matrix chart component
+import Component from './index'; // Import your matrix chart component
 
 export const meta = {
     name: 'Matrix',
     label: 'Matrix Chart',
     classNames: ['add-border'],
+    category: 'Cyreen Components',
     inputs: [
         {
             name: 'ds',
@@ -61,10 +62,62 @@ export const meta = {
             label: 'KPI value',
             category: 'Chart settings',
         },
+        {
+            name: 'Despar',
+            type: 'boolean',
+            label: 'Despar',
+            category: 'Chart settings',
+            defaultValue: false,
+        },
+        {
+            name: 'xAxisKPI',
+            type: 'string',
+            label: 'xAxis KPI value',
+            category: 'Chart settings',
+        },
+        {
+            name: 'yAxisKPI',
+            type: 'string',
+            label: 'yAxis KPI value',
+            category: 'Chart settings',
+        },
+        {
+            name: 'title',
+            type: 'string',
+            label: 'Title text',
+        },
+        {
+            name: 'MasterRetail',
+            type: 'boolean',
+            label: 'Master Retail',
+            category: 'Chart settings',
+            defaultValue: false
+        },
+        {
+            name: 'RetailOptimization',
+            type: 'boolean',
+            label: 'Retail Optimization',
+            category: 'Chart settings',
+            defaultValue: false
+        },
+        {
+            name: 'enableDownloadAsCSV',
+            type: 'boolean',
+            label: 'Show download as CSV',
+            category: 'Export options',
+            defaultValue: true,
+        },
+        {
+            name: 'enableDownloadAsPNG',
+            type: 'boolean',
+            label: 'Show download as PNG',
+            category: 'Export options',
+            defaultValue: true,
+        },
     ],
 } as const satisfies EmbeddedComponentMeta;
 
-export default defineComponent(MatrixChartEcharts, meta, {
+export default defineComponent(Component, meta, {
     props: (inputs: Inputs<typeof meta>) => {
         return {
             ...inputs,

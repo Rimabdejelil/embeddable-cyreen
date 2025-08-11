@@ -14,7 +14,7 @@ type Props = {
 // Column title mapping function
 const mapColumnTitle = (title: string) => {
   const mappings: Record<string, string> = {
-    'Total Frequency': 'Frequency',
+    'Total Frequency': 'Shoppers (Amount)',
     'Total revenue': 'Revenue',
     'Total Sale': 'Sales'
   };

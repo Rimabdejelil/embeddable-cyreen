@@ -1,5 +1,5 @@
 const apiKey = '7f41e45d-02ac-45af-819d-16f024faeec6';
-const connectionName = 'my-db'; 
+const connectionName = 'my-db3';
 
 //const BASE_URL = 'https://api.us.embeddable.com'; // US
 const BASE_URL = 'https://api.eu.embeddable.com'; // EU

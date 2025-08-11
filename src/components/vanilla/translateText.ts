@@ -1,7 +1,5 @@
 import axios from 'axios';
 
-const API_KEY = 'arAtwc937e5a56954d74e36943-arml-Q8';
-
 const getCacheKey = (text: string, target: string) => `${text}_${target}`;
 
 const getCachedTranslation = (key: string): string | null => {
@@ -34,19 +32,19 @@ export const translateText = async (text: string, target: string) => {
 
   try {
     const response = await axios.post(
-      'https://api.translate.arml.trymagic.xyz/v1/translate',
-      null,
+      'http://localhost:5000/translate',
       {
-        params: {
-          text: text,
-          source: 'auto',
-          target: target,
-          api_key: API_KEY,
-        },
+        q: text,
+        source: 'auto',
+        target: target,
+        format: 'text'
+      },
+      {
+        headers: { 'Content-Type': 'application/json' }
       }
     );
 
-    const translatedText = response.data.translated_text;
+    const translatedText = response.data.translatedText; // LibreTranslate uses translatedText (capital T)
 
     // Save in persistent cache
     cacheTranslation(cacheKey, translatedText);
@@ -54,6 +52,6 @@ export const translateText = async (text: string, target: string) => {
     return translatedText;
   } catch (error: any) {
     console.error('Translation API error:', error.response?.data || error.message);
-    return text;
+    return text; // Return original text if translation fails
   }
 };

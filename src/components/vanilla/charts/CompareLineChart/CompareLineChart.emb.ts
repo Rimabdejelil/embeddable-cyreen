@@ -7,7 +7,7 @@ export const meta = {
   name: 'CompareLineChart',
   label: 'Line comparison (time-series)',
   classNames: ['inside-card'],
-  category: 'Charts: time-series comparison',
+  category: 'Embeddable Components',
   inputs: [
     {
       name: 'ds',

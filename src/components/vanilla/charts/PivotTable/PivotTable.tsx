@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Dimension, Measure } from '@embeddable.com/core';
+import { Dimension, Granularity, Measure } from '@embeddable.com/core';
 import TableHead from './components/TableHead';
 import TableRow from './components/TableRow';
 import { SortDirection } from '../../../../enums/SortDirection';
@@ -14,7 +14,7 @@ type Props<T> = {
   rowDimensions?: Dimension[];
   columnDimensions?: Dimension[];
   measures: Measure[];
-  granularity?: string;
+  granularity?: Granularity;
   defaultRowDimensionSortDirection?: SortDirection;
   defaultColumnDimensionSortDirection?: SortDirection;
   minColumnWidth?: number;

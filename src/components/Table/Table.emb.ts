@@ -4,8 +4,8 @@ import TableComponent from './index';
 
 export const meta = {
     name: 'Table',
-    label: 'Table',
-    classNames: ['add-border'],
+    label: 'Red Table',
+    category: 'Cyreen Components',
     inputs: [
         {
             name: 'ds',
@@ -40,7 +40,33 @@ export const meta = {
             label: 'Column 4',
             config: { dataset: 'ds' },
             category: 'Configure table'
-        }
+        },
+        {
+            name: 'Despar',
+            type: 'boolean',
+            label: 'Despar',
+            category: 'Chart settings',
+            defaultValue: false,
+        },
+        {
+            name: 'title',
+            type: 'string',
+            label: 'Title text',
+        },
+        {
+            name: 'enableDownloadAsCSV',
+            type: 'boolean',
+            label: 'Show download as CSV',
+            category: 'Export options',
+            defaultValue: true,
+        },
+        {
+            name: 'enableDownloadAsPNG',
+            type: 'boolean',
+            label: 'Show download as PNG',
+            category: 'Export options',
+            defaultValue: true,
+        },
     ]
 } as const satisfies EmbeddedComponentMeta;
 

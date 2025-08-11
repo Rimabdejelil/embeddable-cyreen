@@ -5,7 +5,7 @@ import Component from './index';
 export const meta = {
   name: 'TextSimple',
   label: 'Simple Text component',
-  category: 'Text',
+  category: 'Cyreen Components',
   inputs: [
     {
       name: 'title',

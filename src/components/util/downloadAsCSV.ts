@@ -95,7 +95,8 @@ const downloadAsCSV = (
   return setTimeout(() => {
     const timestamp = new Date().toISOString();
 
-    downloadBlob(prepCSV(), `${cleanedChartName}-${timestamp}.csv`, 'text/csv;charset=utf-8;');
+    downloadBlob(prepCSV(), `${chartName}.csv`, 'text/csv;charset=utf-8;');
+
   }, 200); //timeout set to indicate that the download is in progress (if instant it can appear to the user that it hasn't been successful)
 };
 

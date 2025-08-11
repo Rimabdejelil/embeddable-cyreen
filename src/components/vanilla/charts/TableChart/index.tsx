@@ -35,7 +35,7 @@ export default (props: Props) => {
   // Column title mappings
   const mapColumnTitle = (title: string) => {
     const mappings: Record<string, string> = {
-      'Total Frequency': 'Frequency',
+      'Total Frequency': 'Shoppers (Amount)',
       'Total revenue': 'Revenue',
       'Total Sale': 'Sales'
     };
@@ -90,7 +90,7 @@ export default (props: Props) => {
   );
 
   const handleCellMouseEnter = useCallback(
-    (e: React.MouseEvent, row: Record<string, any>, column: DimensionOrMeasure, columnIndex: number) => {
+    (e: React.MouseEvent, row: Record<string, any>, column: DimensionOrMeasure, columnIndex: number, rowIndex: number) => {
       // Only show tooltip for columns starting from the 3rd one (index 2)
       if (columnIndex < 1) return;
 
@@ -108,7 +108,8 @@ export default (props: Props) => {
       setTooltip({
         content: formatTooltipContent(rowValue, cellValue, column),
         x: rect.left - tableRect.left + rect.width / 2,
-        y: rect.top - tableRect.top
+        y: rect.top - tableRect.top,
+        rowIndex // Add row index to tooltip state
       });
     },
     [columns]
@@ -125,18 +126,7 @@ export default (props: Props) => {
       childContainerClassName="overflow-x-auto"
     >
       {/* Add title with custom styling */}
-      {props.title && (
-        <div
-          style={{
-            color: '#a53241',
-            fontSize: '23px',
-            fontFamily: 'Arial, sans-serif',
-            marginBottom: '20px',
-          }}
-        >
-          {props.title}
-        </div>
-      )}
+
       <div style={{
         minWidth: `${columns.length * (props.minColumnWidth ?? 100)}px`,
         position: 'relative'
@@ -171,7 +161,7 @@ export default (props: Props) => {
                           fontSize: props.fontSize ? `${props.fontSize}px` : REGULAR_FONT_SIZE,
                           maxWidth: props.minColumnWidth ? `${props.minColumnWidth * 1.2}px` : 'auto',
                         }}
-                        onMouseEnter={(e) => handleCellMouseEnter(e, row, column, columnIndex)}
+                        onMouseEnter={(e) => handleCellMouseEnter(e, row, column, columnIndex, rowIndex)}
                         onMouseLeave={handleCellMouseLeave}
                       >
                         <span title={formatColumn(row[column.name], column) ?? ''}>
@@ -200,7 +190,9 @@ export default (props: Props) => {
                   fontSize: '12px',
                   fontFamily: 'Arial, sans-serif',
                   pointerEvents: 'none',
-                  transform: 'translateX(-50%) translateY(-100%)',
+                  transform: tooltip.rowIndex === 0
+                    ? 'translateX(-50%) translateY(20px)'  // For first row, position below
+                    : 'translateX(-50%) translateY(-100%)', // For other rows, position above
                   minWidth: '200px',
                   maxWidth: '300px',
                   border: '1px solid #eee'

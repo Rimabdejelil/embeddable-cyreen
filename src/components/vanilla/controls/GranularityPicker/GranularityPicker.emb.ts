@@ -9,7 +9,7 @@ export const meta = {
   defaultWidth: 200,
   defaultHeight: 80,
   classNames: ['on-top'],
-  category: 'Controls: inputs & dropdowns',
+  category: 'Embeddable Components',
   inputs: [
     {
       name: 'defaultValue',

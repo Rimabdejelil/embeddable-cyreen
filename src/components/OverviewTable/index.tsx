@@ -1,6 +1,6 @@
-import React, { useRef, useEffect, useMemo } from 'react';
+import React, { useRef, useEffect, useMemo, useState } from 'react';
 import { Dataset, Dimension, Measure, DataResponse, Granularity } from '@embeddable.com/core';
-
+import DownloadMenu from '../vanilla/DownloadMenu';
 type Props = {
   ds: Dataset;
   rowValues: Dimension[];
@@ -12,6 +12,10 @@ type Props = {
   minRowDimensionColumnWidth?: number;
   minColumnWidth?: number;
   ShowClips?: boolean;
+  enableDownloadAsPNG?: boolean;
+  enableDownloadAsCSV?: boolean;
+  title?: string;
+  Despar?: boolean
 };
 
 // Memoized utility functions outside component
@@ -48,19 +52,24 @@ const formatDate = (dateString: string, granularity: string): string => {
   }
 };
 
-const PivotTable = ({
-  rowValues,
-  columnValues,
-  minRowDimensionColumnWidth = 200,
-  minColumnWidth = 150,
-  metrics,
-  granularity,
-  ShowClips,
-  resultsDimension0,
-  nullValueCharacter = '∅',
-}: Props) => {
+export default (props: Props) => {
+  const {
+    rowValues,
+    columnValues,
+    minRowDimensionColumnWidth = 200,
+    minColumnWidth = 150,
+    metrics,
+    granularity,
+    ShowClips,
+    resultsDimension0,
+    nullValueCharacter = '∅', enableDownloadAsCSV,
+    enableDownloadAsPNG, title, Despar
+  } = props;
   const { isLoading, data, error } = resultsDimension0;
   const tooltipRef = useRef<HTMLDivElement | null>(null);
+
+  const [preppingDownload, setPreppingDownload] = useState(false); // Add state for download preparation
+  const chartRef = useRef<HTMLDivElement>(null);
 
   // Fixed widths for consistent columns
   const fixedStartDateWidth = 77;
@@ -141,7 +150,7 @@ const PivotTable = ({
     const tooltip = document.createElement('div');
     tooltip.className = 'pivot-tooltip';
     Object.assign(tooltip.style, {
-      position: 'absolute',
+      position: 'fixed', // Changed from absolute to fixed
       visibility: 'hidden',
       backgroundColor: 'rgb(255,255,255)',
       color: 'black',
@@ -152,7 +161,9 @@ const PivotTable = ({
       pointerEvents: 'none',
       boxShadow: '0 0 10px rgba(0, 0, 0, 0.1)',
       zIndex: '1000',
-      maxWidth: '300px'
+      maxWidth: '300px',
+      whiteSpace: 'normal', // Ensure text wraps properly
+      wordWrap: 'break-word' // Prevent overflow
     });
     document.body.appendChild(tooltip);
     tooltipRef.current = tooltip;
@@ -165,29 +176,70 @@ const PivotTable = ({
   const handleMouseOver = React.useCallback((e, rowKey, colKey, value, clipName = null) => {
     if (!tooltipRef.current || value === null || value === undefined) return;
 
-    const formattedValue = parseFloat(value).toLocaleString('en-US');
+    const formattedValue = parseFloat(value).toLocaleString(props.Despar ? 'de-DE' : 'en-US');
     const dateFormatted = formatDate(colKey, granularity);
 
     tooltipRef.current.innerHTML = `
-      <div>
-        ${granularity === 'day' ? 'On' : granularity === 'week' ? 'During' : 'In'} 
-        <strong style="color:#a53241">${dateFormatted}</strong>, 
-        the <strong style="color:#a53241">${rowKey}</strong> 
-        campaign recorded <strong style="color:#a53241">${formattedValue}</strong> impressions
-        ${ShowClips && clipName ? ` for the clip <strong style="color:#a53241">${clipName}</strong>` : ''}.
-      </div>
-    `;
+    <div>
+      ${granularity === 'day' ? 'On' : granularity === 'week' ? 'During' : 'In'} 
+      <strong style="color:#AF3241">${dateFormatted}</strong>, 
+      the <strong style="color:#AF3241">${rowKey}</strong> 
+      campaign recorded <strong style="color:#AF3241">${formattedValue}</strong> impressions
+      ${ShowClips && clipName ? ` for the visual <strong style="color:#AF3241">${clipName}</strong>` : ''}.
+    </div>
+  `;
 
     tooltipRef.current.style.visibility = 'visible';
-    tooltipRef.current.style.top = `${e.pageY + 10}px`;
-    tooltipRef.current.style.left = `${e.pageX + 10}px`;
+
+    // Position the tooltip
+    positionTooltip(e);
   }, [granularity]);
 
   const handleMouseMove = React.useCallback((e) => {
     if (!tooltipRef.current) return;
-    tooltipRef.current.style.top = `${e.pageY + 10}px`;
-    tooltipRef.current.style.left = `${e.pageX + 10}px`;
+    positionTooltip(e);
   }, []);
+
+  // New function to handle tooltip positioning with edge detection
+  const positionTooltip = (e) => {
+    if (!tooltipRef.current) return;
+
+    const tooltip = tooltipRef.current;
+    const mouseX = e.clientX;
+    const mouseY = e.clientY;
+
+    // Temporarily make visible to measure width
+    tooltip.style.visibility = 'hidden';
+    tooltip.style.display = 'block';
+
+    // Get tooltip dimensions
+    const tooltipWidth = tooltip.offsetWidth;
+    const tooltipHeight = tooltip.offsetHeight;
+
+    // Calculate available space
+    const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
+
+    // Determine position - default to right
+    let left = mouseX + 10;
+    let top = mouseY + 10;
+
+    // Check if tooltip would go off right edge
+    if (left + tooltipWidth > windowWidth) {
+      left = mouseX - tooltipWidth - 10;
+    }
+
+    // Check if tooltip would go off bottom edge
+    if (top + tooltipHeight > windowHeight) {
+      top = mouseY - tooltipHeight - 10;
+    }
+
+    // Apply styles
+    tooltip.style.left = `${left}px`;
+    tooltip.style.top = `${top}px`;
+    tooltip.style.visibility = 'visible';
+    tooltip.style.display = '';
+  };
 
   const handleMouseLeave = React.useCallback(() => {
     if (!tooltipRef.current) return;
@@ -294,7 +346,8 @@ const PivotTable = ({
                 backgroundColor: rowBgColor
               }}
             >
-              {rowTotal.toLocaleString('en-US')}
+              {rowTotal.toLocaleString(props.Despar ? 'de-DE' : 'en-US')
+              }
             </td>
 
             {columnKeys.map((colKey) => {
@@ -316,7 +369,8 @@ const PivotTable = ({
                   onMouseMove={handleMouseMove}
                   onMouseLeave={handleMouseLeave}
                 >
-                  {value !== null ? value.toLocaleString('en-US') : nullValueCharacter}
+                  {value !== null ? value.toLocaleString(props.Despar ? 'de-DE' : 'en-US')
+                    : nullValueCharacter}
                 </td>
               );
             })}
@@ -411,7 +465,8 @@ const PivotTable = ({
                     borderBottom
                   }}
                 >
-                  {campaignTotal.toLocaleString('en-US')}
+                  {campaignTotal.toLocaleString(props.Despar ? 'de-DE' : 'en-US')
+                  }
                 </td>
               ) : null}
 
@@ -435,7 +490,8 @@ const PivotTable = ({
                     onMouseMove={handleMouseMove}
                     onMouseLeave={handleMouseLeave}
                   >
-                    {value !== null ? value.toLocaleString('en-US') : nullValueCharacter}
+                    {value !== null ? value.toLocaleString(props.Despar ? 'de-DE' : 'en-US')
+                      : nullValueCharacter}
                   </td>
                 );
               })}
@@ -447,90 +503,129 @@ const PivotTable = ({
   };
 
   return (
-    <div className="pivot-table-container">
-      <div className={`pivot-table-wrapper ${granularity !== 'day' ? 'compact-header' : ''}`}>
-        <table className="pivot-table">
-          <thead className="pivot-table-header">
-            <tr className="year-header-row">
-              <th
-                rowSpan={2}
-                className="pivot-table-header-cell title"
-                style={{
-                  width: fixedCampaignColumnWidth,
-                  minWidth: fixedCampaignColumnWidth,
-                  maxWidth: fixedCampaignColumnWidth,
-                }}
-              >
-                Campaign
-              </th>
-              <th
-                rowSpan={2}
-                className="pivot-table-header-cell center"
-                style={{
-                  width: fixedStartDateWidth,
-                  minWidth: fixedStartDateWidth,
-                  maxWidth: fixedStartDateWidth
-                }}
-              >
-                Start Date
-              </th>
-              {ShowClips && (
+    <div style={{ position: 'relative', height: '100%' }}>
+      {/* Download Menu Fixed Top-Right */}
+      {(enableDownloadAsCSV || enableDownloadAsPNG) && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '5px',
+            right: '20px',
+            zIndex: 2000
+          }}
+        >
+          <DownloadMenu
+            csvOpts={{
+              chartName: props.title || 'chart',
+              props: {
+                ...props,
+                results: resultsDimension0,
+              },
+            }}
+            enableDownloadAsCSV={enableDownloadAsCSV}
+            enableDownloadAsPNG={enableDownloadAsPNG}
+            pngOpts={{ chartName: props.title || 'chart', element: chartRef.current }}
+            preppingDownload={preppingDownload}
+            setPreppingDownload={setPreppingDownload}
+            Table={true}
+            style={{
+              backgroundColor: 'transparent',
+              border: 'none',
+              padding: 0,
+              margin: 0
+            }}
+          />
+        </div>
+      )}
+      <div className="pivot-table-container" ref={chartRef} style={{
+        borderRadius: '8px',
+        boxShadow: '0 0 10px rgba(0, 0, 0, 0.15)'
+      }}>
+
+        <div className={`pivot-table-wrapper ${granularity !== 'day' ? 'compact-header' : ''}`}>
+          <table className="pivot-table">
+            <thead className="pivot-table-header">
+              <tr className="year-header-row">
                 <th
                   rowSpan={2}
-                  className="pivot-table-header-cell"
+                  className="pivot-table-header-cell title"
                   style={{
-                    width: fixedClipColumnWidth,
-                    minWidth: fixedClipColumnWidth,
-                    maxWidth: fixedClipColumnWidth
+                    width: fixedCampaignColumnWidth,
+                    minWidth: fixedCampaignColumnWidth,
+                    maxWidth: fixedCampaignColumnWidth,
                   }}
                 >
-                  Clip
+                  Campaign
                 </th>
-              )}
-              <th
-                rowSpan={2}
-                className="pivot-table-header-cell center"
-                style={{
-                  width: fixedTotalWidth,
-                  minWidth: fixedTotalWidth,
-                  maxWidth: fixedTotalWidth
-                }}
-              >
-                Total
-              </th>
-
-              {groupColumnsByYear(columnKeys, granularity).map((group) => (
                 <th
-                  key={group.year}
-                  className="pivot-table-header-cell center"
-                  style={{ minWidth: minColumnWidth * group.keys.length }}
-                  colSpan={group.keys.length}
-                >
-                  {group.year}
-                </th>
-              ))}
-            </tr>
-
-            <tr className="period-header-row">
-              {columnKeys.map((colKey) => (
-                <th
-                  key={colKey}
+                  rowSpan={2}
                   className="pivot-table-header-cell center"
                   style={{
-                    minWidth: minColumnWidth,
-                    fontSize: '11px'
+                    width: fixedStartDateWidth,
+                    minWidth: fixedStartDateWidth,
+                    maxWidth: fixedStartDateWidth
                   }}
                 >
-                  {formatDate(colKey, granularity)}
+                  Start Date
                 </th>
-              ))}
-            </tr>
-          </thead>
+                {ShowClips && (
+                  <th
+                    rowSpan={2}
+                    className="pivot-table-header-cell"
+                    style={{
+                      width: fixedClipColumnWidth,
+                      minWidth: fixedClipColumnWidth,
+                      maxWidth: fixedClipColumnWidth
+                    }}
+                  >
+                    Visual
+                  </th>
+                )}
+                <th
+                  rowSpan={2}
+                  className="pivot-table-header-cell center"
+                  style={{
+                    width: fixedTotalWidth,
+                    minWidth: fixedTotalWidth,
+                    maxWidth: fixedTotalWidth
+                  }}
+                >
+                  Total
+                </th>
 
-          <tbody>
-            {renderTableRows()}
-          </tbody>
-        </table>
+                {groupColumnsByYear(columnKeys, granularity).map((group) => (
+                  <th
+                    key={group.year}
+                    className="pivot-table-header-cell center"
+                    style={{ minWidth: minColumnWidth * group.keys.length }}
+                    colSpan={group.keys.length}
+                  >
+                    {group.year}
+                  </th>
+                ))}
+              </tr>
+
+              <tr className="period-header-row">
+                {columnKeys.map((colKey) => (
+                  <th
+                    key={colKey}
+                    className="pivot-table-header-cell center"
+                    style={{
+                      minWidth: minColumnWidth,
+                      fontSize: '11px'
+                    }}
+                  >
+                    {formatDate(colKey, granularity)}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+
+            <tbody>
+              {renderTableRows()}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <style jsx>{`
@@ -543,17 +638,23 @@ const PivotTable = ({
     font-family: Arial, sans-serif;
     font-size: 13px;
     border: 1px solid #ccc;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.15);
   }
 
   .pivot-table-wrapper {
-    overflow: visible;
-    margin: -1px 0 0 -1px;
-  }
+          overflow: visible;
+          margin: -1px 0 0 -1px;
+          border-radius: 8px;
+        }
 
-  .pivot-table {
-    border-collapse: collapse;
-    width: 100%;
-  }
+        .pivot-table {
+          border-collapse: collapse;
+          width: 100%;
+          height: auto;
+          min-height: 200px;  /* Changed from minHeight to min-height */
+          max-height: 100vh;  /* Optional: prevents the container from growing too large */
+          border-radius: 8px;
+        }
 
   .pivot-table-header {
     position: sticky;
@@ -642,5 +743,3 @@ const PivotTable = ({
     </div>
   );
 };
-
-export default React.memo(PivotTable);

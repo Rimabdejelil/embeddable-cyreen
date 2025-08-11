@@ -12,7 +12,7 @@ import {
 export const meta = {
   name: 'TextUpliftTotal',
   label: 'Text Uplif Total',
-  category: 'Text',
+  category: 'Cyreen Components',
   inputs: [
     {
       name: 'ds',
@@ -63,6 +63,13 @@ export const meta = {
       category: 'Configure chart'
     },
     {
+      name: 'master',
+      type: 'boolean',
+      label: 'Master',
+      defaultValue: 'false',
+      category: 'Chart settings',
+    },
+    {
       name: 'titleFontSize',
       type: 'number',
       label: 'Title font size in pixels',
@@ -73,6 +80,20 @@ export const meta = {
       type: 'number',
       label: 'Body font size in pixels',
       category: 'Formatting'
+    },
+    {
+      name: 'enableDownloadAsCSV',
+      type: 'boolean',
+      label: 'Show download as CSV',
+      category: 'Export options',
+      defaultValue: true,
+    },
+    {
+      name: 'enableDownloadAsPNG',
+      type: 'boolean',
+      label: 'Show download as PNG',
+      category: 'Export options',
+      defaultValue: true,
     },
   ]
 } as const satisfies EmbeddedComponentMeta;

@@ -11,7 +11,7 @@ export const meta = {
   defaultWidth: 300,
   defaultHeight: 50,
   classNames: ['on-top'],
-  category: 'Controls: inputs & dropdowns',
+  category: 'Embeddable Components',
   inputs: [
     {
       name: 'title',
