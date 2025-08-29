@@ -115,22 +115,26 @@ export default (props: Props) => {
                     let popupContent;
                     if (title === 'Locations') {
                         popupContent = `
-                        <span style="font-family: Arial; font-size: 12px; color: black;">
-                            Store <span style="color: #AF3241; font-weight: bold">${value1}</span> located at ZIP-code <span style="color: #AF3241; font-weight: bold">${value2}</span>
-                        </span>
-                    `;
+            <span style="font-family: Arial; font-size: 12px; color: black;">
+                Store <span style="color: #AF3241; font-weight: bold">${value1}</span> 
+                located at ZIP-code <span style="color: #AF3241; font-weight: bold">${value2}</span>
+            </span>
+            `;
                     } else {
                         popupContent = `
-                        <span style="font-family: Arial; font-size: 12px; color: black;">
-                            <span style="color: #AF3241; font-weight: bold">${value1}</span> has 
-                            <span style="color: #AF3241; font-weight: bold">${Despar ? dotLocale.format(",")(value2) : d3.format(",")(value2)}</span> Impressions.
-                        </span>
-                    `;
+            <span style="font-family: Arial; font-size: 12px; color: black;">
+                <span style="color: #AF3241; font-weight: bold">${value1}</span> has 
+                <span style="color: #AF3241; font-weight: bold">${Despar ? dotLocale.format(",")(value2) : d3.format(",")(value2)}</span> Impressions.
+            </span>
+            `;
                     }
 
-                    const baseSize = title === 'Locations' ? 5 : 10;
-                    const sizeMultiplier = title === 'Locations' ? 10 : 20;
-                    const size = maxValue > 0 ? baseSize + (sizeMultiplier * value2) / maxValue : baseSize;
+                    // 🔹 Fixed size if Locations, proportional otherwise
+                    const size = title === 'Locations'
+                        ? 14 // 👈 all same size
+                        : maxValue > 0
+                            ? 10 + (20 * value2) / maxValue
+                            : 10;
 
                     return {
                         position: [point[latDim.name], point[lonDim.name]],
@@ -139,6 +143,7 @@ export default (props: Props) => {
                         label: value1,
                     };
                 });
+
 
             setMarkers(newMarkers);
         }

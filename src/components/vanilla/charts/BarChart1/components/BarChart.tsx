@@ -125,7 +125,7 @@ type Props = {
     displayHorizontally?: boolean;
     dps?: number;
     enableDownloadAsCSV?: boolean;
-    metrics: Measure[];
+    metrics: DimensionOrMeasure[];
     lineMetrics?: DimensionOrMeasure[];
     results?: DataResponse;
     reverseXAxis?: boolean;
@@ -159,13 +159,36 @@ type Props = {
     MarketingActivities?: boolean;
 };
 
-import { useMemo } from 'react';
+import { useMemo, useRef, useState } from 'react';
 
 
 
 export default function BarChart({ ...props }: Props) {
+    const chartRef = useRef<ChartJS>(null);
     const chartDataResult = useMemo(() => chartData(props), [props]);
-    const needsScrollableContainer = chartDataResult.labels.length > 100;
+    const [hiddenDatasets, setHiddenDatasets] = useState<Record<number, boolean>>({});
+
+    const toggleDataset = (datasetIndex: number) => {
+        const chart = chartRef.current;
+        if (!chart) return;
+
+        const currentlyVisible = chart.isDatasetVisible(datasetIndex);
+        chart.setDatasetVisibility(datasetIndex, !currentlyVisible);
+        chart.update();
+
+        setHiddenDatasets((prev) => ({
+            ...prev,
+            [datasetIndex]: currentlyVisible,
+        }));
+    };
+
+    const needsScrollableContainer = chartDataResult.labels.length > 200;
+
+    const needsCustomLegend = props.xAxis === 'receipts_retail.date' || props.xAxis === 'customer_journeys.date';
+
+    // Combine both conditions
+    const shouldShowCustomLegend = needsScrollableContainer || needsCustomLegend;
+
 
     // Helper function to format currency based on MasterRetail flag
     const formatCurrency = (text: string) => {
@@ -192,13 +215,60 @@ export default function BarChart({ ...props }: Props) {
         const xAxisExists = Object.prototype.hasOwnProperty.call(firstDataItem, mappedXAxis);
 
         if (!xAxisExists) {
-            // Instead of returning empty div, return null to keep the current chart
             return null;
         }
     }
 
-    const renderChart = () => (
+    // Determine if we need to reverse the legend
+    const shouldReverse =
+        (props.xAxis === "receipts_retail.hour" && props.GeneralKPIs) ||
+        props.xAxis === "receipts_retail.date" ||
+        props.xAxis === "customer_journeys.dow" ||
+        props.xAxis === "customer_journeys.month1";
+
+    // Prepare legend items with correct indices
+    const labelMap: Record<string, string> = {
+        "Total Frequency": "Shoppers (Amount)",
+        "Without C.A.P": "Without C.A.P.",
+        "With C.A.P": "With C.A.P.",
+        "Sales Uplift (No Negative)": "Sales Uplift",
+        "SP CR Uplift Positive": "Conversion Uplift",
+        "Sum Frequency No Device": "Without Trolley",
+        "Sum Frequency Trolley": "With Trolley",
+        "Average Frequency No Device Hourly": "Without Trolley",
+        "Average Frequency Trolley Hourly": "With Trolley",
+        "Average Frequency No Device Weekly": "Without Trolley",
+        "Average Frequency Trolley Weekly": "With Trolley",
+        "Sum Revenue No Device": "Without Trolley",
+        "Sum Revenue Trolley": "With Trolley",
+        "Sum Sales No Device": "Without Trolley",
+        "Sum Sales Trolley": "With Trolley",
+        "Average Sales No Device Hourly": "Without Trolley",
+        "Average Sales Trolley Hourly": "With Trolley",
+        "Average Sales No Device Weekly": "Without Trolley",
+        "Average Sales Trolley Weekly": "With Trolley",
+        "Average Revenue No Device Hourly": "Without Trolley",
+        "Average Revenue Trolley Hourly": "With Trolley",
+        "Average Revenue No Device Weekly": "Without Trolley",
+        "Average Revenue Trolley Weekly": "With Trolley",
+    };
+
+    const legendItems = chartDataResult.datasets.map((ds, originalIndex) => ({
+        label: labelMap[ds.label] || ds.label,
+        color: ds.backgroundColor,
+        originalIndex, // Store the original dataset index
+        displayIndex: shouldReverse
+            ? chartDataResult.datasets.length - 1 - originalIndex // Reverse the index for display
+            : originalIndex
+    }));
+
+    if (shouldReverse) {
+        legendItems.reverse(); // Reverse the array for display order
+    }
+
+    const renderChart = (additionalProps?: any) => (
         <Chart
+            ref={chartRef}
             type="bar"
             height="100%"
             options={
@@ -208,7 +278,7 @@ export default function BarChart({ ...props }: Props) {
                     displayXaxis: props.displayXaxis,
                     KPIvalue: props.KPIvalue ? formatCurrency(props.KPIvalue) : props.KPIvalue,
                     showLabels: props.showLabels,
-                    showSecondYAxis: (props.KPIvalue === "Average Shopper" || props.KPIvalue === "Average Shopper (in %)" ||
+                    showSecondYAxis: (props.KPIvalue === "Total Shoppers" || props.KPIvalue === "Total Shoppers (in %)" ||
                         props.KPIvalue === "Average Duration" || props.KPIvalue === "Trolley Ratio (%)") ? false : props.showSecondYAxis,
                     displayAsPercentage: props.PercentageSign,
                     MasterLines: props.MasterLines,
@@ -224,7 +294,7 @@ export default function BarChart({ ...props }: Props) {
                 })
             }
             data={chartDataResult}
-
+            {...additionalProps}
         />
     );
 
@@ -235,7 +305,6 @@ export default function BarChart({ ...props }: Props) {
                 .filter(ds => ds.yAxisID === 'y1')
                 .flatMap(ds => ds.data as number[])
             ) || 0);
-
 
         function niceStep(value: number) {
             if (value <= 10) {
@@ -250,10 +319,8 @@ export default function BarChart({ ...props }: Props) {
             }
         }
 
-        const roughStep = maxY1Value / 10;  // try to keep around 5–6 ticks
+        const roughStep = maxY1Value / 10;
         const step = niceStep(roughStep);
-
-        // ensure we fully cover the data range
         const maxTick = Math.ceil(maxY1Value / step) * step;
         const numTicks = Math.floor(maxTick / step) + 1;
 
@@ -262,125 +329,245 @@ export default function BarChart({ ...props }: Props) {
             ticks.push(i * step);
         }
 
-
-
         function formatTickValue(value: number) {
             if (value >= 1000) return (value / 1000).toFixed(0) + 'k';
             return value.toFixed(0);
         }
 
-
         return (
             <div
                 style={{
-                    overflowX: 'auto',
-                    width: '100%',
-                    position: 'relative',
-                    scrollbarWidth: 'thin',
-                    scrollbarColor: '#888 #f1f1f1',
+                    position: "relative",
+                    width: "100%",
+                    paddingBottom: "40px",
+                    boxSizing: "border-box",
                 }}
             >
-                <div style={{ display: 'flex', position: 'relative', width: '100%' }}>
-                    {/* Scrollable chart area with single scrollbar */}
-                    <div style={{ overflowX: 'auto', flexGrow: 1 }}>
-                        <div
-                            style={{
-                                minWidth: `${Math.max(chartDataResult.labels.length, 30) * 6}px`, // Adjust width per data points
-                                height: '400px',
-                                willChange: 'transform',
-                            }}
-                        >
-                            {renderChart()}
-                        </div>
-                    </div>
-
-                    {/* Fixed Y1 axis container */}
-
-                    {props.showSecondYAxis && (
-                        <div
-                            style={{
-                                width: '80px',
-                                paddingLeft: '0px',
-                                background: '#fff',
-                                display: 'flex',
-                                flexDirection: 'row',
-                                position: 'sticky',
-                                right: 0,
-                                top: 0,
-                                zIndex: 10,
-                                height: '400px',
-                                boxSizing: 'border-box',
-                                userSelect: 'none',
-                            }}
-                        >
-                            {/* Inner container with reduced height and vertical axis line */}
+                {/* Scrollable chart container */}
+                <div
+                    style={{
+                        overflowX: "auto",
+                        width: "100%",
+                        scrollbarWidth: "thin",
+                        scrollbarColor: "#888 #f1f1f1",
+                    }}
+                >
+                    <div style={{ display: "flex", position: "relative", width: "100%" }}>
+                        {/* Scrollable chart area */}
+                        <div style={{ flexGrow: 1 }}>
                             <div
                                 style={{
-                                    borderLeft: '1px solid #ddd', // axis line
-                                    height: '85%',                // shorter than full height
-                                    margin: '40% 0',               // space top and bottom
-                                    display: 'flex',
-                                    flexDirection: 'row',
-                                    flexGrow: 1,
+                                    minWidth: `${Math.max(chartDataResult.labels.length, 30) * 6}px`,
+                                    height: "400px",
+                                    willChange: "transform",
                                 }}
                             >
-                                {/* Tick labels */}
+                                {renderChart()}
+                            </div>
+                        </div>
+
+                        {/* Fixed Y1 axis container */}
+                        {props.showSecondYAxis && (
+                            <div
+                                style={{
+                                    width: "80px",
+                                    paddingLeft: 0,
+                                    background: "#fff",
+                                    display: "flex",
+                                    flexDirection: "row",
+                                    position: "sticky",
+                                    right: 0,
+                                    top: 0,
+                                    zIndex: 10,
+                                    height: "400px",
+                                    boxSizing: "border-box",
+                                    userSelect: "none",
+                                }}
+                            >
                                 <div
                                     style={{
+                                        borderLeft: "1px solid #ddd",
+                                        height: "85%",
+                                        margin: "40% 0",
+                                        display: "flex",
+                                        flexDirection: "row",
                                         flexGrow: 1,
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        justifyContent: 'flex-end',
-                                        gap: '6px', // optional: controls space between ticks
-
-                                        alignItems: 'flex-end',
-                                        paddingLeft: '6px',
-                                        paddingRight: '6px',
-                                        fontSize: '12px',
-                                        color: '#555',
-                                        lineHeight: 1.2,
                                     }}
                                 >
-                                    {ticks
-                                        .slice()
-                                        .reverse()
-                                        .map((tickValue, index) => (
-                                            <div key={index} style={{ marginTop: '12px' }}>{formatTickValue(tickValue)}</div>
-                                        ))}
+                                    <div
+                                        style={{
+                                            flexGrow: 1,
+                                            display: "flex",
+                                            flexDirection: "column",
+                                            justifyContent: "space-between",
+                                            alignItems: "flex-end",
+                                            paddingLeft: "6px",
+                                            paddingRight: "6px",
+                                            fontSize: "12px",
+                                            color: "#555",
+                                            lineHeight: 1.2,
+                                        }}
+                                    >
+                                        {ticks
+                                            .slice()
+                                            .reverse()
+                                            .map((tickValue, index) => (
+                                                <div key={index}>{formatTickValue(tickValue)}</div>
+                                            ))}
+                                    </div>
+                                </div>
+
+                                <div
+                                    style={{
+                                        writingMode: "vertical-rl",
+                                        textAlign: "center",
+                                        fontSize: "13px",
+                                        paddingLeft: "8px",
+                                        flexShrink: 0,
+                                        color: "#444",
+                                        userSelect: "none",
+                                        alignSelf: "center",
+                                        height: "100%",
+                                        display: "flex",
+                                        justifyContent: "center",
+                                        alignItems: "center",
+                                    }}
+                                >
+                                    {props.secondAxisTitle}
                                 </div>
                             </div>
-
-                            {/* Vertical title */}
-                            <div
-                                style={{
-                                    writingMode: 'vertical-rl',
-                                    textAlign: 'center',
-                                    fontSize: '13px',
-                                    paddingLeft: '8px',
-                                    flexShrink: 0,
-                                    color: '#444',
-                                    userSelect: 'none',
-                                    alignSelf: 'center',
-                                    height: '100%',
-                                    display: 'flex',
-                                    justifyContent: 'center',
-                                    alignItems: 'center',
-                                }}
-                            >
-                                {props.secondAxisTitle}
-                            </div>
-                        </div>
-                    )}
-
-
+                        )}
+                    </div>
                 </div>
-            </div>
 
+                {/* Fixed Legend */}
+                {props.showLegend && (
+                    <div
+                        style={{
+                            position: "sticky",
+                            bottom: 0,
+                            left: 0,
+                            right: 0,
+                            textAlign: "center",
+                            padding: "10px 0",
+                            backgroundColor: "white",
+                            zIndex: 20,
+                            borderTop: "1px solid #ddd",
+                            boxSizing: "border-box",
+                            fontSize: 12,
+                            fontWeight: "bold",
+                            color: "#444",
+                            userSelect: "none",
+                        }}
+                    >
+                        {legendItems.map(({ label, color, originalIndex }, i) => {
+                            const isHidden = hiddenDatasets[originalIndex];
+
+                            return (
+                                <span
+                                    key={i}
+                                    onClick={() => toggleDataset(originalIndex)} // Use original index for toggling
+                                    style={{
+                                        display: "inline-block",
+                                        marginRight: 20,
+                                        verticalAlign: "middle",
+                                        cursor: "pointer",
+                                        opacity: isHidden ? 0.4 : 1,
+                                    }}
+                                >
+                                    <span
+                                        style={{
+                                            display: "inline-block",
+                                            width: 10,
+                                            height: 10,
+                                            borderRadius: "50%",
+                                            backgroundColor: color,
+                                            marginRight: 6,
+                                            verticalAlign: "middle",
+                                        }}
+                                    />
+                                    {label}
+                                </span>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
         );
     }
+
+
+    // Fix for date-based charts without scroll
+    if (needsCustomLegend && !needsScrollableContainer && props.showLegend) {
+        return (
+            <div style={{
+                position: "relative",
+                width: "100%",
+                height: "100%", // Add explicit height
+                display: "flex",
+                flexDirection: "column"
+            }}>
+                {/* Chart container with proper height */}
+                <div style={{
+                    flex: 1,
+                    minHeight: "400px", // Ensure minimum height
+                    position: "relative"
+                }}>
+                    {renderChart()}
+                </div>
+
+                {/* Custom Legend */}
+                <div
+                    style={{
+                        textAlign: "center",
+                        padding: "10px 0",
+                        backgroundColor: "white",
+                        borderTop: "1px solid #ddd",
+                        boxSizing: "border-box",
+                        fontSize: 12,
+                        fontWeight: "bold",
+                        color: "#444",
+                        userSelect: "none",
+                        flexShrink: 0 // Prevent legend from growing
+                    }}
+                >
+                    {legendItems.map(({ label, color, originalIndex }, i) => {
+                        const isHidden = hiddenDatasets[originalIndex];
+
+                        return (
+                            <span
+                                key={i}
+                                onClick={() => toggleDataset(originalIndex)}
+                                style={{
+                                    display: "inline-block",
+                                    marginRight: 20,
+                                    verticalAlign: "middle",
+                                    cursor: "pointer",
+                                    opacity: isHidden ? 0.4 : 1,
+                                }}
+                            >
+                                <span
+                                    style={{
+                                        display: "inline-block",
+                                        width: 10,
+                                        height: 10,
+                                        borderRadius: "50%",
+                                        backgroundColor: color,
+                                        marginRight: 6,
+                                        verticalAlign: "middle",
+                                    }}
+                                />
+                                {label}
+                            </span>
+                        );
+                    })}
+                </div>
+            </div>
+        );
+    }
+
     return renderChart();
 }
-
 // ... (previous imports remain the same)
 
 function chartData(props: Props): ChartData<'bar' | 'line'> {
@@ -461,7 +648,7 @@ function chartData(props: Props): ChartData<'bar' | 'line'> {
     const LINE_COLOR = (InstoreDuration || InstoreDuration2 || TrolleyUsage) ? '#af3241' : '#F04B55';
     const LINE_COLORS = InstoreDuration ? ['#af3241', '#af3241'] : ['#62626e', '#F04B55'];
 
-    let selectedMetrics: Measure[] = [];
+    let selectedMetrics: DimensionOrMeasure[] = [];
     let selectedLineMetrics: DimensionOrMeasure[] = [];
 
     if (InstoreDuration) {
@@ -471,9 +658,9 @@ function chartData(props: Props): ChartData<'bar' | 'line'> {
         } else if (KPIvalue === formatCurrency('Average Revenue (CLP$)')) {
             if (metrics.length > 0) selectedMetrics = [metrics[1]];
             if (lineMetrics.length > 0) selectedLineMetrics = [lineMetrics[lineMetrics.length - 1]];
-        } else if (KPIvalue === 'Average Shopper') {
+        } else if (KPIvalue === 'Total Shoppers') {
             if (metrics.length > 0) selectedMetrics = [metrics[2]];
-        } else if (KPIvalue === 'Average Shopper (in %)') {
+        } else if (KPIvalue === 'Total Shoppers (in %)') {
             if (metrics.length > 0) selectedMetrics = [metrics[3]];
         }
     }
@@ -536,7 +723,7 @@ function chartData(props: Props): ChartData<'bar' | 'line'> {
     }
 
     else if (Profitability2) {
-        if (KPIvalue === 'Sales (Units)') {
+        if (KPIvalue === 'Average Sales (Units)') {
             if (xAxis === 'receipts_retail.hour') {
                 if (metrics.length > 0) selectedMetrics = [metrics[0], metrics[1]];
 
@@ -552,7 +739,7 @@ function chartData(props: Props): ChartData<'bar' | 'line'> {
             }
 
         }
-        else if (KPIvalue === ('Revenue (CLP$)') || KPIvalue === ('Revenue (€)')) {
+        else if (KPIvalue === ('Average Revenue (CLP$)') || KPIvalue === ('Average Revenue (€)')) {
             if (xAxis === 'receipts_retail.hour') {
                 if (metrics.length > 0) selectedMetrics = [metrics[6], metrics[7]];
 

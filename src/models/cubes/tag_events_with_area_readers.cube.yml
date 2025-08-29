@@ -164,3 +164,7 @@ cubes:
         type: count
         sql: id_tag_event
         title: "Tag Events Count"
+
+    
+    refresh_key:
+      every: 12 hour

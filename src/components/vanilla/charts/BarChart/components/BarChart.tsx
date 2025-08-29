@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-import { DataResponse, Dimension, Measure } from '@embeddable.com/core';
+import { DataResponse, Dimension, DimensionOrMeasure, Measure } from '@embeddable.com/core';
 import { translateText } from '../../../translateText';
 
 import React, { useEffect, useState, useMemo } from 'react';
@@ -275,6 +275,7 @@ type Props = {
   PercentageSign?: boolean;
   impression?: boolean;
   performance?: boolean;
+  Weekly?: boolean;
   Totalperformance?: boolean;
   KPIvalue?: string[];
   optimization?: boolean;
@@ -294,7 +295,7 @@ type Props = {
  ********************************************************************/
 
 export default function BarChart({ ...props }: Props) {
-  const { clientContext, title, metrics, granularity, PercentageSign, AbsolutePercentage, impression, performance, master, KPIvalue, xAxis, Totalperformance, edeka } = props;
+  const { clientContext, title, metrics, granularity, PercentageSign, Weekly, AbsolutePercentage, impression, performance, master, KPIvalue, xAxis, Totalperformance, edeka } = props;
   const language = clientContext?.language;
 
 
@@ -346,6 +347,7 @@ export default function BarChart({ ...props }: Props) {
       displayXaxis: props.displayXaxis, // Passing the state value to the chart options
       impression: props.impression,
       performance: props.performance,
+      Weekly: props.Weekly,
       optimization: props.optimization,
       TrolleyBar: props.TrolleyBar,
       showLabels: props.showLabels,
@@ -870,6 +872,11 @@ function chartData(props: Props): ChartData<'bar' | 'line'> {
 
   results.data.forEach((entry) => {
     const rawDate = new Date(entry[xAxis.name]);
+    if (
+      (granularity === 'week' && performance && !entry["big_dm.timestamp.week"]) ||
+      (granularity === 'week' && props.masterUplift && !entry["big_dm.timestamp.week"])
+    ) return;
+
 
     selectedMetrics.forEach((metric, mi) => {
       const val = +entry[metric.name] || 0;
@@ -996,6 +1003,8 @@ function chartData(props: Props): ChartData<'bar' | 'line'> {
     // replace labels in place
     labels.splice(0, labels.length, ...orderedLabels);
   }
+
+
 
   /**if ((xAxis.name === 'big_dm.hour_group')) {
     // desired fixed sequence
@@ -1124,5 +1133,8 @@ function chartData(props: Props): ChartData<'bar' | 'line'> {
 
   if (TotalStores) labels.push('Total');
 
+  // ✅ filter week labels before returning
+
   return { labels, datasets };
+
 }

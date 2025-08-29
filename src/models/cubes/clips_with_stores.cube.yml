@@ -94,4 +94,7 @@ cubes:
         sql: TO_CHAR(date_end, 'YYYY-MM-DD')
         type: string
         title: End Date
+
+    refresh_key:
+      every: 12 hour
       

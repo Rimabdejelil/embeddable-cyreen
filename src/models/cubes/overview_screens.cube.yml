@@ -146,3 +146,6 @@ cubes:
         type: number
         sql: "COALESCE({smart_baskets}, 0) + COALESCE({smart_trolleys}, 0)"
         title: "Smart Devices"
+
+    refresh_key:
+      every: 12 hour

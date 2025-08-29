@@ -191,7 +191,7 @@ export default ({
       {!isLoading && (props.enableDownloadAsCSV || props.enableDownloadAsPNG) ? (
         <DownloadMenu
           csvOpts={{
-            chartName: props.translatedTitle || 'chart',
+            chartName: props.title || 'chart',
             props: {
               ...props,
               results: props.results,

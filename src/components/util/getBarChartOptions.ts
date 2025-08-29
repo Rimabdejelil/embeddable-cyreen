@@ -71,6 +71,7 @@ export default function getBarChartOptions({
   impression = false,
   performance = false,
   optimization = false,
+  Weekly = false,
   TrolleyBar = false,
   MarketingActivities = false,
   InstoreDuration2 = false,
@@ -91,8 +92,8 @@ export default function getBarChartOptions({
   AbsolutePercentage = false,
 }: Partial<Props> & {
   lineMetrics?: DimensionOrMeasure[];
-  metric?: Measure;
-  metrics?: Measure[];
+  metric?: DimensionOrMeasure;
+  metrics?: DimensionOrMeasure[];
   results?: DataResponse;
   reverseXAxis?: boolean;
   secondAxisTitle?: string;
@@ -102,6 +103,7 @@ export default function getBarChartOptions({
   xAxisTitle?: string;
   yAxisTitle?: string;
   isGroupedBar?: boolean;
+  Weekly?: boolean;
   stackBars?: boolean;
   xAxisPosition?: 'top' | 'bottom';
   displayYaxis?: boolean;
@@ -239,7 +241,20 @@ export default function getBarChartOptions({
 
         //optional second y-axis for optional line metrics
 
-        display: (xAxis === 'receipts_retail.date' || xAxis === 'customer_journeys.date' || xAxis === 'overview.date') ? false : showSecondYAxis,
+
+        display: function (context) {
+          const chart = context.chart;
+          // Get all datasets assigned to the second Y-axis
+          const y1Datasets = chart.data.datasets.filter(ds => ds.yAxisID === 'y1');
+
+          // Calculate total data points across them
+          const totalPoints = y1Datasets.reduce((sum, ds) => sum + (ds.data?.length || 0), 0);
+
+          console.log(totalPoints)
+
+          // Show axis only if total points <= 200 and showSecondYAxis is true
+          return totalPoints < 200 && showSecondYAxis;
+        },
 
 
         grace: '0%',
@@ -488,7 +503,24 @@ export default function getBarChartOptions({
       monthHeader: { active: granularity === 'day' },
       dateHeader: { active: granularity === 'total' },
       legend: {
-        display: showLegend,
+        display: function (context) {
+          const chart = context.chart;
+          // Get all datasets assigned to the second Y-axis
+
+          if (xAxis === 'receipts_retail.date' || xAxis === 'customer_journeys.date') {
+            return false;
+          }
+
+          const y1Datasets = chart.data.datasets.filter(ds => ds.yAxisID === 'y1');
+
+          // Calculate total data points across them
+          const totalPoints = y1Datasets.reduce((sum, ds) => sum + (ds.data?.length || 0), 0);
+
+          console.log(totalPoints)
+
+          // Show axis only if total points <= 200 and showSecondYAxis is true
+          return totalPoints < 200 && showLegend;
+        },
         position: 'bottom',
         labels: {
           usePointStyle: true,
@@ -543,6 +575,12 @@ export default function getBarChartOptions({
 
           // Create tooltip element if not exists
           let tooltipEl = document.getElementById('custom-tooltip');
+          if (tooltipModel.opacity === 0) {
+            if (tooltipEl) {
+              tooltipEl.parentNode.removeChild(tooltipEl);
+            }
+            return;
+          }
           if (!tooltipEl) {
             tooltipEl = document.createElement('div');
             tooltipEl.id = 'custom-tooltip';
@@ -1235,7 +1273,7 @@ export default function getBarChartOptions({
 
             }
 
-            else if (KPIvalue === "Average Shopper") {
+            else if (KPIvalue === "Total Shoppers") {
               console.log(metricObj?.name)
               innerHTML = `
                   <div><strong style="color:#AF3241">${value}</strong> shoppers spent <strong style="color:#AF3241">${xVal} minutes</strong> in the store</div>
@@ -1244,7 +1282,7 @@ export default function getBarChartOptions({
 
             }
 
-            else if (KPIvalue === "Average Shopper (in %)") {
+            else if (KPIvalue === "Total Shoppers (in %)") {
               console.log(metricObj?.name)
               innerHTML = `
                   <div><strong style="color:#AF3241">${value}%</strong> shoppers spent <strong style="color:#AF3241">${xVal} minutes</strong> in the store</div>
@@ -1289,7 +1327,7 @@ export default function getBarChartOptions({
 
             }
 
-            else if (KPIvalue === "Average Shopper") {
+            else if (KPIvalue === "Total Shoppers") {
               console.log(metricObj?.name)
               innerHTML = `
                   <div><strong style="color:#AF3241">${value}</strong> shoppers spent <strong style="color:#AF3241">${xVal} minutes</strong> in the store</div>
@@ -1298,7 +1336,7 @@ export default function getBarChartOptions({
 
             }
 
-            else if (KPIvalue === "Average Shopper (in %)") {
+            else if (KPIvalue === "Total Shoppers (in %)") {
               console.log(metricObj?.name)
               innerHTML = `
                   <div><strong style="color:#AF3241">${value}%</strong> shoppers spent <strong style="color:#AF3241">${xVal} minutes</strong> in the store</div>
@@ -1343,7 +1381,7 @@ export default function getBarChartOptions({
 
             }
 
-            else if (KPIvalue === "Average Shopper") {
+            else if (KPIvalue === "Total Shoppers") {
               console.log(metricObj?.name)
               innerHTML = `
                   <div><strong style="color:#AF3241">${value}</strong> shoppers spent <strong style="color:#AF3241">${xVal} minutes</strong> in the store</div>
@@ -1352,7 +1390,7 @@ export default function getBarChartOptions({
 
             }
 
-            else if (KPIvalue === "Average Shopper (in %)") {
+            else if (KPIvalue === "Total Shoppers (in %)") {
               console.log(metricObj?.name)
               innerHTML = `
                   <div><strong style="color:#AF3241">${value}%</strong> shoppers spent <strong style="color:#AF3241">${xVal} minutes</strong> in the store</div>
@@ -1398,7 +1436,7 @@ export default function getBarChartOptions({
 
             }
 
-            else if (KPIvalue === "Average Shopper") {
+            else if (KPIvalue === "Total Shoppers") {
               console.log(metricObj?.name)
               innerHTML = `
                   <div><strong style="color:#AF3241">${value}</strong> shoppers spent <strong style="color:#AF3241">${xVal} minutes</strong> in the store</div>
@@ -1407,7 +1445,7 @@ export default function getBarChartOptions({
 
             }
 
-            else if (KPIvalue === "Average Shopper (in %)") {
+            else if (KPIvalue === "Total Shoppers (in %)") {
               console.log(metricObj?.name)
               innerHTML = `
                   <div><strong style="color:#AF3241">${value}%</strong> shoppers spent <strong style="color:#AF3241">${xVal} minutes</strong> in the store</div>
@@ -1453,7 +1491,7 @@ export default function getBarChartOptions({
 
             }
 
-            else if (KPIvalue === "Average Shopper") {
+            else if (KPIvalue === "Total Shoppers") {
               console.log(metricObj?.name)
               innerHTML = `
                   <div><strong style="color:#AF3241">${value}</strong> shoppers spent <strong style="color:#AF3241">${xVal} minutes</strong> in the store</div>
@@ -1462,7 +1500,7 @@ export default function getBarChartOptions({
 
             }
 
-            else if (KPIvalue === "Average Shopper (in %)") {
+            else if (KPIvalue === "TOtal Shoppers (in %)") {
               console.log(metricObj?.name)
               innerHTML = `
                   <div><strong style="color:#AF3241">${value}%</strong> shoppers spent <strong style="color:#AF3241">${xVal} minutes</strong> in the store</div>
@@ -2743,7 +2781,7 @@ export default function getBarChartOptions({
                 break;
               case 'day':
                 const expandedDate = expandMonthName(xVal);
-                prefix = `On <strong style="color:#a53241">${expandedDate} </strong>, Impressions are `;
+                prefix = `On <strong style="color:#a53241">${expandedDate}</strong>, Impressions are `;
                 break;
 
               case 'week':
@@ -2879,8 +2917,10 @@ export default function getBarChartOptions({
               const dataset = context.chart.data.datasets?.[context.datasetIndex];
               const dataLength = dataset?.data?.length || 0;
 
+              console.log(dataLength)
+
               // Skip label if too many points and not every 5th
-              if (dataLength > 100 && context.dataIndex % 10 !== 0 && context.dataset.type === 'line') {
+              if (dataLength > 70 && context.dataIndex % 10 !== 0 && context.dataset.type === 'line') {
                 return null;
               }
               const label = context.dataset.label || '';
@@ -2888,7 +2928,7 @@ export default function getBarChartOptions({
               const metricsList = [...(metrics || []), ...(lineMetrics || [])];
               const metricObj = metrics ? metricsList[metricIndex] : metric;
 
-              if (v === null || v === 0) return null;
+              if (v === null) return null;
 
               let val = formatValue(v, {
                 type: 'number',
@@ -2910,7 +2950,7 @@ export default function getBarChartOptions({
               if (
                 displayAsPercentage ||
                 (MasterLines && label === 'With C.A.P.') ||
-                (InstoreDuration && label === 'Average Shopper (%)') ||
+                (InstoreDuration && label === 'Total Shoppers (in %)') ||
                 (TrolleyUsage && label === 'Trolley Ratio (%)')
               ) {
                 val += '%';

@@ -324,6 +324,9 @@ cubes:
         sql: "ROUND({total_impressions},0)"
         title: "Total Impressions Round 2"
 
+    refresh_key:
+      every: 12 hour
+
 
         
 

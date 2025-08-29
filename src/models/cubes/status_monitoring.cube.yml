@@ -100,9 +100,6 @@ cubes:
             columns:
               - CUBE.number_store_cyreen
 
-        refreshKey:
-          every: 15 minutes
-
       - name: heartbeat_with_stores_rollup
         type: rollup_join
         measures:
@@ -178,8 +175,6 @@ cubes:
             columns:
               - CUBE.number_store_cyreen
 
-        refreshKey:
-          every: 15 minutes
 
 
       

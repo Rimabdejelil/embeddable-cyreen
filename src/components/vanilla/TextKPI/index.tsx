@@ -76,11 +76,14 @@ export default (props: Props) => {
   };
 
   const iconStyle = {
-    width: icon === "Optimization" || "profitability" || "marketingactivities" || "generalkpis" ? '185px' : '135px',
-    height: icon === "Optimization" ? '115px' : '100px',
+    width: icon === "optimization" || icon === "profitability" || icon === "marketingactivities" || icon === "generalkpis"
+      ? '185px'
+      : '135px',
+    height: icon === "optimization" ? '115px' : '100px',
     marginRight: '10px',
     marginLeft: '0px',
   };
+
 
   const iconUrl = icon ? iconMap[icon.toLowerCase()] : null;
 

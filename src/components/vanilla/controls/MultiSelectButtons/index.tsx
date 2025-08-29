@@ -49,9 +49,9 @@ export default (props: Props) => {
         onChange({ value: label, label, Ranking, RankingMin });
       } else if (label === 'Average Revenue (CLP$)') {
         onChange({ value: label, label, Ranking, RankingMin });
-      } else if (label === 'Average Shopper') {
+      } else if (label === 'Total Shoppers') {
         onChange({ value: label, label, Ranking, RankingMin });
-      } else if (label === 'Average Shopper (in %)') {
+      } else if (label === 'Total Shoppers (in %)') {
         onChange({ value: label, label, Ranking, RankingMin });
       } else if (label === 'No Rank') {
         onChange({ value: label, label, RankingMin });
@@ -91,9 +91,9 @@ export default (props: Props) => {
         onChange({ value: label, label, Ranking, RankingMin });
       } else if (label === 'Average Revenue (CLP$)') {
         onChange({ value: label, label, Ranking, RankingMin });
-      } else if (label === 'Average Shopper') {
+      } else if (label === 'Total Shoppers') {
         onChange({ value: label, label, Ranking, RankingMin });
-      } else if (label === 'Average Shopper (in %)') {
+      } else if (label === 'Total Shoppers (in %)') {
         onChange({ value: label, label, Ranking, RankingMin });
       } else if (label === 'No Rank') {
         onChange({ value: label, label, RankingMin });

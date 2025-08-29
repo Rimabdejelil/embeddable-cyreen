@@ -652,36 +652,10 @@ cubes:
           END
         title: "Average Revenue No Device Weekly"
 
+    refresh_key:
+      every: 12 hour
 
-    pre_aggregations:
-      - name: store_sales_summary
-        measures:
-          - receipts_retail.sum_frequency
-          - receipts_retail.sum_revenue_euros
-          - receipts_retail.sum_sale
-        dimensions:
-          - receipts_retail.name_store
-          - receipts_retail.name_device_type
-          - receipts_retail.hour
-          - receipts_retail.sales
 
-      - name: sales_and_average_sales
-        measures:
-          - receipts_retail.sum_sale
-          - receipts_retail.average_sales
-        dimensions:
-          - receipts_retail.name_device_type
-
-      - name: store_frequency_sale_revenue
-        measures:
-          - receipts_retail.sum_frequency
-          - receipts_retail.sum_sale
-          - receipts_retail.sum_revenue
-        dimensions:
-          - receipts_retail.name_store
-          - receipts_retail.name_device_type
-          - receipts_retail.hour
-          - receipts_retail.sales
 
 
 

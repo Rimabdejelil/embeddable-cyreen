@@ -293,4 +293,3 @@ function asGranularity(gran: string | any): string | null {
 }
 
 
-

@@ -57,25 +57,36 @@ export default (props: Props) => {
     /* ------------------------------------------------------------ */
     /*  Tooltip – create once                                        */
     /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    /*  Tooltip – create once and clean up                          */
+    /* ------------------------------------------------------------ */
     useEffect(() => {
-        if (!tooltipRef.current) {
-            tooltipRef.current = d3
-                .select('body')
-                .append('div')
-                .attr('class', 'tooltip')
-                .style('position', 'absolute')
-                .style('visibility', 'hidden')
-                .style('z-index', '9999')
-                .style('background-color', 'rgb(255,255,255)')
-                .style('color', 'black')
-                .style('padding', '8px')
-                .style('font-family', 'Arial, sans-serif')
-                .style('border-radius', '4px')
-                .style('font-size', '12px')
-                .style('pointer-events', 'none')
-                .node() as HTMLDivElement;
-        }
+        const tooltipNode = d3
+            .select('body')
+            .append('div')
+            .attr('id', 'heatmap-tooltip')
+            .attr('class', 'tooltip')
+            .style('position', 'absolute')
+            .style('visibility', 'hidden')
+            .style('z-index', '9999')
+            .style('background-color', 'rgb(255,255,255)')
+            .style('color', 'black')
+            .style('padding', '8px')
+            .style('font-family', 'Arial, sans-serif')
+            .style('border-radius', '4px')
+            .style('font-size', '12px')
+            .style('pointer-events', 'none')
+            .node() as HTMLDivElement;
+
+        tooltipRef.current = tooltipNode;
+
+        return () => {
+            // 🔑 cleanup on unmount
+            d3.select('#heatmap-tooltip').remove();
+            tooltipRef.current = null;
+        };
     }, []);
+
 
     const tooltip = d3.select(tooltipRef.current!);
 

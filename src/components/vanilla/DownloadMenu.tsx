@@ -87,13 +87,29 @@ const DownloadMenu: React.FC<Props> = (props) => {
       let value = obj[key];
       const lowerKey = key.toLowerCase();
 
-      if (value !== null && value !== '' && !isNaN(value)) {
+      // ✅ Handle date strings - extract only date part when time is midnight
+      if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}T/.test(value)) {
+        // Check if time component is exactly 00:00:00.000
+        if (value.endsWith('T00:00:00.000')) {
+          value = value.split("T")[0]; // Extract just YYYY-MM-DD
+        } else if (key.toLowerCase().includes('hour')) {
+          // If column title contains "hour" and time is not midnight, extract just the hour
+          const date = new Date(value);
+          value = date.getHours().toString().padStart(2, '0');
+        } else if (key.toLowerCase().includes('timestamp')) {
+          // If column title contains "timestamp", extract just the date part
+          value = value.split("T")[0];
+        }
+      }
+
+      // ✅ Handle numeric formatting
+      else if (value !== null && value !== '' && !isNaN(value)) {
         const num = typeof value === 'number' ? value : parseFloat(value);
 
         if (lowerKey.includes('impression')) {
           value = Math.round(num); // round to 0 decimals
         } else {
-          value = Number.isInteger(num) ? num : num.toFixed(2); // default formatting
+          value = Number.isInteger(num) ? num : num.toFixed(2);
         }
       }
 
@@ -101,6 +117,7 @@ const DownloadMenu: React.FC<Props> = (props) => {
     }
     return transformed;
   };
+
 
   // Utility: Clean column titles based on your rules
   const cleanColumnTitle = (title: string): string => {

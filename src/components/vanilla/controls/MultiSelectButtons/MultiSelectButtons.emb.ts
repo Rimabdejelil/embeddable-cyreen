@@ -268,11 +268,13 @@ export default defineComponent(Component, meta, {
       const isAbsoluteDifference = Ranking === 'Absolute Difference (in pp)';
       const isRelativeDifference = Ranking === 'Relative Difference (in %)';
       const isNoRanking = Ranking === 'No Ranking';
+
       const isHour = label === "Hourly";
       const isDay = label === "Daily";
       const isWeekday = label === "Weekday";
       const isMonth = label === "Monthly";
       const isWeekly = label === "Weekly";
+      
       const isSales = label === "Sales (Units)";
       const isRevenue = label === "Revenue (CLP$)";
       const isRevenueEuro = label === "Revenue (€)";
@@ -300,19 +302,19 @@ export default defineComponent(Component, meta, {
 
       const isAverageSalesRank = Ranking === "Average Sales (Units)"
       const isAverageRevenueRank = Ranking === "Average Revenue (€)" || Ranking === "Average Revenue (CLP$)";
-      const isAverageShopperRank = Ranking === "Average Shopper"
-      const isAverageShopperPerRank = Ranking === "Average Shopper (in %)"
+      const isAverageShopperRank = Ranking === "Total Shoppers"
+      const isAverageShopperPerRank = Ranking === "Total Shoppers (in %)"
 
       const isAverageSalesRankMin = RankingMin === "Average Sales (Units)"
       const isAverageRevenueRankMin = RankingMin === "Average Revenue (€)" || RankingMin === "Average Revenue (CLP$)";
-      const isAverageShopperRankMin = RankingMin === "Average Shopper"
-      const isAverageShopperPerRankMin = RankingMin === "Average Shopper (in %)"
+      const isAverageShopperRankMin = RankingMin === "Total Shoppers"
+      const isAverageShopperPerRankMin = RankingMin === "Total Shoppers (in %)"
 
       const isAverageSales = label === "Average Sales (Units)"
       const isAverageRevenue = label === "Average Revenue (€)" || label === "Average Revenue (CLP$)";
 
-      const isAverageShopper = label === "Average Shopper"
-      const isAverageShopperPer = label === "Average Shopper (in %)"
+      const isAverageShopper = label === "Total Shoppers"
+      const isAverageShopperPer = label === "Total Shoppers (in %)"
 
       const isLow = label === "Low -> High"
       const isHigh = label === "High -> Low"

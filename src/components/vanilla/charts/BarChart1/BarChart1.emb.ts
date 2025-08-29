@@ -28,7 +28,7 @@ export const meta = {
         },
         {
             name: 'metrics',
-            type: 'measure',
+            type: 'dimensionOrMeasure',
             array: true,
             label: 'Metrics',
             config: {
@@ -296,15 +296,16 @@ export default defineComponent(Component, meta, {
         if (inputs.sortBy) {
             orderProp.push({
                 property: asMeasure(inputs.sortBy),
-                direction: (inputs.sortDirection === 'desc') ? 'desc' : 'asc',
+                direction: inputs.sortDirection === 'desc' ? 'desc' : 'asc',
             });
-        } else if (inputs.limit) {
+        } else if (inputs.limit && inputs.metrics?.length) {
             orderProp.push({
                 property: inputs.metrics[0],
                 direction: 'desc',
             });
         }
 
+        // Split lineMetrics into dimensions and measures
         const lineDimensions = (inputs.lineMetrics || []).filter(
             (item) => item?.__type__ === 'dimension'
         );
@@ -312,17 +313,24 @@ export default defineComponent(Component, meta, {
             (item) => item?.__type__ !== 'dimension'
         );
 
+        // Split metrics into dimensions and measures
+        const metricDimensions = (inputs.metrics || []).filter(
+            (item) => item?.__type__ === 'dimension'
+        );
+        const metricMeasures = (inputs.metrics || []).filter(
+            (item) => item?.__type__ !== 'dimension'
+        );
+
         // Transform xAxis if MarketingActivities is true
         let xAxisName = inputs.xAxis;
         if (inputs.MarketingActivities) {
             const xAxisTransformMap: Record<string, string> = {
-                'Other': 'big_dm.activity_4',
-                'Discount': 'big_dm.activity_1',
+                Other: 'big_dm.activity_4',
+                Discount: 'big_dm.activity_1',
                 'Second placement': 'big_dm.activity_2',
                 'Regal Wochen': 'big_dm.activity_3',
                 'Design Edition': 'big_dm.activity_5',
             };
-
             xAxisName = xAxisTransformMap[inputs.xAxis] ?? inputs.xAxis;
         }
 
@@ -331,20 +339,28 @@ export default defineComponent(Component, meta, {
             reverseXAxis: inputs.reverseXAxis,
             results: loadData({
                 from: inputs.ds,
-                dimensions: [asDimension(xAxisName), ...lineDimensions.map(asDimension)],
-                measures: [...inputs.metrics, ...lineMeasures.map(asMeasure)],
+                dimensions: [
+                    asDimension(xAxisName),
+                    ...lineDimensions.map(asDimension),
+                    ...metricDimensions.map(asDimension),
+                ],
+                measures: [...metricMeasures.map(asMeasure), ...lineMeasures.map(asMeasure)],
                 orderBy: orderProp,
                 limit: inputs.limit || 50,
             }),
         };
     },
-
 });
 
-function asDimension(valueDimension: string | any): any {
-    return typeof valueDimension === 'string' ? { name: valueDimension, __type__: 'dimension' } : valueDimension;
+// Helper functions
+function asDimension(value: string | any): any {
+    return typeof value === 'string'
+        ? { name: value, __type__: 'dimension' }
+        : value;
 }
 
-function asMeasure(valueMeasure: string | any): any {
-    return typeof valueMeasure === 'string' ? { name: valueMeasure, __type__: 'dimensionOrMeasure' } : valueMeasure;
+function asMeasure(value: string | any): any {
+    return typeof value === 'string'
+        ? { name: value, __type__: 'dimensionOrMeasure' }
+        : value;
 }
