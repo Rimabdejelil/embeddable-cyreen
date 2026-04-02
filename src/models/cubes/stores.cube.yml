@@ -1,0 +1,36 @@
+cubes :
+
+  - name: stores
+    title: Stores
+    sql_table: public.stores
+    data_source: my-db2
+    
+    dimensions:
+      - name: id_store
+        sql: id_store
+        type: number
+
+      
+      - name: id_company
+        sql: id_company
+        type: number
+      
+      - name: name
+        sql: name
+        type: string
+
+      - name: tree_path
+        sql: tree_path
+        type: string
+      
+      - name: number_store_cyreen
+        sql: number_store_cyreen
+        type: number
+
+
+      - name: number_root
+        sql: |
+          CAST(
+            SPLIT_PART(tree_path, '-', 2) AS INT
+          )
+        type: number

@@ -1,0 +1,155 @@
+cubes:
+  # Cube 1: Receipt-level totals (safe without dupplicates)
+  - name: receipts
+    sql_table: receipt_headers
+    data_source: my-db2
+
+    dimensions:
+      - name: id_receipt_header
+        type: string
+        sql: id_receipt_header
+        primary_key: true
+
+      - name: number_receipt_identifier
+        sql: number_receipt_identifier
+        type: number
+
+      - name: id_store
+        sql: id_store
+        type: number
+
+      - name: timestamp
+        sql: timestamp
+        type: time
+
+      - name: id_company
+        sql: id_company
+        type: string
+
+      - name: number_checkout
+        sql: number_checkout
+        type: string
+
+      - name: number_tag
+        sql: number_tag
+        type: string
+
+    measures:
+      - name: total_count_fixed_to_nri
+        type: sum
+        sql: total_count
+        title: Total Count Fixed to NRI
+
+      - name: total_value
+        type: sum
+        sql: total_value
+
+      - name: frequency
+        type: count_distinct
+        sql: number_receipt_identifier
+        title: Total Frequency
+    
+    refresh_key:
+      every: 12 hour
+
+    joins:
+      - name: ferrero_data
+        sql: "{CUBE}.number_receipt_identifier = {ferrero_data}.number_receipt_identifier"
+        relationship: one_to_many
+
+
+  # Cube 2: Product/tag-level details
+  - name: ferrero_data
+    data_source: my-db2
+    sql: |-
+      SELECT
+        fr.number_receipt_identifier,
+        fr.description,
+        fr.gtin,
+        fr.value,
+        fr.count,
+        fp.ferrero_produktgruppe,
+        fp.kategorie,
+        fp.produktname,
+        fw.hwg_bezeichnung,
+        fw.owg_bezeichnung,
+        fw.wg_bezeichnung,
+        tt.name AS device_name
+      FROM ferrero_receipts fr
+      LEFT JOIN ferrero_products fp ON fp.ean_code = fr.gtin
+      LEFT JOIN ferrero_warengruppen fw ON fw.wg = fr.number_category
+      LEFT JOIN receipt_headers rh ON rh.number_receipt_identifier = fr.number_receipt_identifier
+      LEFT JOIN tags t ON t.number_tag_area = rh.number_tag
+      LEFT JOIN tag_types tt ON tt.id_tag_type = t.id_tag_type
+
+    dimensions:
+      - name: id_receipt
+        type: string
+        sql: id_receipt
+        primary_key: true
+        
+      - name: number_receipt_identifier
+        sql: number_receipt_identifier
+        type: number
+
+      - name: description
+        sql: description
+        type: string
+
+      - name: gtin
+        sql: gtin
+        type: number
+
+      - name: ferrero_produktgruppe
+        sql: ferrero_produktgruppe
+        type: string
+
+      - name: kategorie
+        sql: kategorie
+        type: string
+
+      - name: produktname
+        sql: produktname
+        type: string
+
+      - name: device_name
+        sql: device_name
+        type: string
+
+      - name: hwg_bezeichnung
+        sql: hwg_bezeichnung
+        type: string
+        title: EDEKA Hauptwarengruppe
+
+      - name: owg_bezeichnung
+        sql: owg_bezeichnung
+        type: string
+        title: EDEKA Oberwarengruppe
+
+      - name: wg_bezeichnung
+        sql: wg_bezeichnung
+        type: string
+        title: EDEKA Warengruppe
+
+      - name: count
+        sql: count
+        type: number
+
+    measures:
+      - name: value
+        type: avg
+        sql: value
+
+      - name: average_revenue_value
+        type: number
+        sql: (SUM(value)) * 1.0 / COUNT(DISTINCT {ferrero_data}.number_receipt_identifier)
+        title: Average Revenue (Known Products)
+
+      - name: average_sales_count
+        type: number
+        sql: SUM(count) * 1.0 / COUNT(DISTINCT {ferrero_data}.number_receipt_identifier)
+        title: Average Sales (Known Products)
+
+    
+    refresh_key:
+      every: 12 hour
